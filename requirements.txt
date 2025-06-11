@@ -1,0 +1,5 @@
+aiogram
+peewee
+psycopg2-binary
+aiohttp
+environs

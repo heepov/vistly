@@ -1,0 +1,80 @@
+*.DS_Store
+.DS_Store
+*.json
+*.log
+*.code-workspace
+
+.venv/
+venv/
+__pycache__/
+.vscode/
+.env
+log/
+
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.idea/
+*.swp
+*.swo
+.vs/
+*.sublime-workspace
+*.sublime-project
+
+# Environments
+.env
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Coverage/Tests
+.coverage
+.coverage.*
+.pytest_cache/
+htmlcov/
+.tox/
+nosetests.xml
+coverage.xml
+
+# Logs
+logs/
+*.log.*
+npm-debug.log*
+
+# OS generated files
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Temp files
+*.tmp
+*.bak
+*.swp
