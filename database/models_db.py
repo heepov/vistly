@@ -1,7 +1,7 @@
 from peewee import *
 from playhouse.postgres_ext import ArrayField
 from datetime import datetime
-from models.enum_classes import PrivacyType, EntityType, StatusType
+from models.enum_classes import EntityType, StatusType
 
 
 def update_timestamp(func):
@@ -17,16 +17,12 @@ class BaseModel(Model):
         database = None
 
 
-class User(BaseModel):
+class UserDB(BaseModel):
     id = AutoField()
     tg_id = BigIntegerField(unique=True, null=True)
     username = CharField(null=True)
     name = CharField(null=True)
     info = TextField(null=True)
-    privacy_type = CharField(
-        choices=[(tag.value, tag.value) for tag in PrivacyType],
-        default=PrivacyType.PUBLIC.value,
-    )
     added_db = DateTimeField(default=datetime.now)
 
     class Meta:
@@ -34,7 +30,7 @@ class User(BaseModel):
         database = None
 
 
-class Entity(BaseModel):
+class EntityDB(BaseModel):
     id = AutoField()
     src_id = CharField(unique=True, null=True)
     title = CharField()
@@ -58,15 +54,15 @@ class Entity(BaseModel):
 
     @update_timestamp
     def save(self, *args, **kwargs):
-        return super(Entity, self).save(*args, **kwargs)
+        return super(EntityDB, self).save(*args, **kwargs)
 
     class Meta:
         table_name = "entity"
         database = None
 
 
-class Rating(BaseModel):
-    entity = ForeignKeyField(Entity, backref="ratings")
+class RatingDB(BaseModel):
+    entity = ForeignKeyField(EntityDB, backref="ratings")
     source = CharField()
     value = FloatField()
     max_value = IntegerField()
@@ -78,10 +74,10 @@ class Rating(BaseModel):
         database = None
 
 
-class UserEntity(BaseModel):
+class UserEntityDB(BaseModel):
     id = AutoField()
-    user = ForeignKeyField(User, backref="user_entities")
-    entity = ForeignKeyField(Entity, backref="user_entities")
+    user = ForeignKeyField(UserDB, backref="user_entities")
+    entity = ForeignKeyField(EntityDB, backref="user_entities")
     status = CharField(
         choices=[(tag.value, tag.value) for tag in StatusType],
         default=StatusType.UNDEFINED.value,
@@ -94,45 +90,8 @@ class UserEntity(BaseModel):
 
     @update_timestamp
     def save(self, *args, **kwargs):
-        return super(UserEntity, self).save(*args, **kwargs)
+        return super(UserEntityDB, self).save(*args, **kwargs)
 
     class Meta:
         table_name = "user_entity"
-        database = None
-
-
-class Collection(BaseModel):
-    id = AutoField()
-    user = ForeignKeyField(User, backref="collections")
-    title = CharField()
-    hashtags = ArrayField(CharField, null=True)
-    description = TextField(null=True)
-    type = CharField(
-        choices=[(tag.value, tag.value) for tag in EntityType],
-        default=EntityType.UNDEFINED.value,
-    )
-    privacy_type = CharField(
-        choices=[(tag.value, tag.value) for tag in PrivacyType],
-        default=PrivacyType.PUBLIC.value,
-    )
-    is_default = BooleanField(default=False)
-    added_db = DateTimeField(default=datetime.now)
-    updated_db = DateTimeField(default=datetime.now)
-
-    @update_timestamp
-    def save(self, *args, **kwargs):
-        return super(Collection, self).save(*args, **kwargs)
-
-    class Meta:
-        table_name = "collection"
-        database = None
-
-
-class CollectionEntity(BaseModel):
-    collection = ForeignKeyField(Collection, backref="collection_entities")
-    user_entity = ForeignKeyField(UserEntity, backref="collection_entities")
-
-    class Meta:
-        primary_key = CompositeKey("collection", "user_entity")
-        table_name = "collection_entity"
         database = None

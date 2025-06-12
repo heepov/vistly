@@ -1,12 +1,6 @@
 from enum import Enum
 
 
-class PrivacyType(Enum):
-    PUBLIC = "public"
-    PRIVATE = "private"
-    FRIENDS = "friends"
-
-
 class EntityType(Enum):
     MOVIE = "movie"
     SERIES = "series"
