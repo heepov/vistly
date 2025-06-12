@@ -78,3 +78,29 @@ def get_entity_detail_keyboard(
         ),
     )
     return builder.as_markup()
+
+
+def get_status_selection_keyboard(entity_id: int) -> InlineKeyboardMarkup:
+    """Создает клавиатуру для выбора статуса добавления в список"""
+    builder = InlineKeyboardBuilder()
+
+    # Первый ряд кнопок
+    builder.row(
+        InlineKeyboardButton(
+            text="In progress", callback_data=f"add_status:{entity_id}:in_progress"
+        ),
+        InlineKeyboardButton(
+            text="Complete", callback_data=f"add_status:{entity_id}:complete"
+        ),
+        InlineKeyboardButton(
+            text="Planing", callback_data=f"add_status:{entity_id}:planing"
+        ),
+    )
+
+    # Второй ряд кнопок
+    builder.row(
+        InlineKeyboardButton(text="Skip", callback_data=f"add_status:{entity_id}:skip"),
+        InlineKeyboardButton(text="Cancel", callback_data="cancel_add_to_list"),
+    )
+
+    return builder.as_markup()
