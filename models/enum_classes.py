@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class EntityType(Enum):
+class EntityType(str, Enum):
     MOVIE = "movie"
     SERIES = "series"
     GAME = "game"
@@ -10,8 +10,13 @@ class EntityType(Enum):
     UNDEFINED = "undefined"
 
 
-class StatusType(Enum):
+class StatusType(str, Enum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     PLANNING = "planning"
     UNDEFINED = "undefined"
+
+
+class LanguageType(str, Enum):
+    RU = "ru"
+    EN = "en"

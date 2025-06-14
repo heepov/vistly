@@ -1,7 +1,7 @@
 from aiogram import Router, types
 from aiogram.types import CallbackQuery
-from bot.keyboards.menu import menu_keyboard
-from bot.keyboards.search import (
+from bot.keyboards.other_keyboards import menu_keyboard
+from bot.keyboards.omdb_search_keyboards import (
     get_search_results_keyboard,
     get_entity_detail_keyboard,
     get_status_selection_keyboard,
@@ -11,7 +11,8 @@ from database.models_db import EntityDB, RatingDB, UserEntityDB, UserDB
 from models.enum_classes import EntityType, StatusType
 from datetime import datetime, date
 from aiogram.fsm.context import FSMContext
-from bot.states.fsm_states import OmdbSearchStates, MainMenuStates
+from bot.states.fsm_states import SearchOmdbStates, MainMenuStates, SearchStates
+from bot.utils.message_formater.omdb_search_entity_details import format_entity_details
 
 omdb_router = Router()
 
@@ -140,66 +141,6 @@ def omdb_ratings_to_db(entity: EntityDB, details: dict) -> list[RatingDB]:
     return ratings
 
 
-def format_entity_details(entity: EntityDB, ratings: list[RatingDB]) -> str:
-    """Формирует сообщение с деталями фильма/сериала"""
-    # Собираем рейтинги для вывода
-    rating_parts = []
-    for rating in ratings:
-        if rating.source == "Internet Movie Database":
-            rating_parts.append(f"IMDb - {rating.value}")
-        elif rating.source == "Rotten Tomatoes":
-            rating_parts.append(f"RT - {rating.value}")
-        elif rating.source == "Metacritic":
-            rating_parts.append(f"Meta - {rating.value}")
-    rating_str = " | ".join(rating_parts) if rating_parts else None
-
-    # Формируем сообщение
-    message_parts = []
-
-    # Заголовок
-    release_date_str = (
-        f" | {entity.release_date.strftime('%d %b %Y')}" if entity.release_date else ""
-    )
-    message_parts.append(
-        f"<b>{entity.title}</b>{release_date_str} | {entity.type.capitalize()}"
-    )
-
-    # Рейтинги
-    if rating_str:
-        message_parts.append(f"Rating: {rating_str}")
-
-    # Длительность
-    if entity.duration:
-        message_parts.append(f"Runtime: {entity.duration} min")
-
-    # Количество сезонов
-    year_str = (
-        f" ({entity.year_start}{f'-{entity.year_end}' if entity.year_end else ''})"
-        if entity.year_start
-        else ""
-    )
-    if entity.total_season:
-        message_parts.append(f"Seasons: {entity.total_season} | {year_str}")
-
-    # Жанры
-    if entity.genres:
-        message_parts.append(f"Genre: {', '.join(entity.genres)}")
-
-    # Режиссер
-    if entity.authors:
-        message_parts.append(f"Director: {', '.join(entity.authors)}")
-
-    # Актеры
-    if entity.actors:
-        message_parts.append(f"Actors: {', '.join(entity.actors)}")
-
-    # Описание
-    if entity.description:
-        message_parts.append(f"\n{entity.description}")
-
-    return "\n".join(message_parts)
-
-
 async def show_search_results(
     callback: CallbackQuery,
     query: str,
@@ -232,7 +173,7 @@ async def show_search_results(
             f"Nothing was found for the query: <b>{query}</b>"
         )
         if state:
-            await state.set_state(MainMenuStates.awaiting_query)
+            await state.set_state(MainMenuStates.waiting_for_query)
         return False
 
     keyboard = get_search_results_keyboard(
@@ -256,7 +197,7 @@ async def show_search_results(
     return True
 
 
-@omdb_router.callback_query(OmdbSearchStates.waiting_for_search_type)
+@omdb_router.callback_query(SearchStates.waiting_for_search_type)
 async def handle_search_type(callback: CallbackQuery, state: FSMContext):
     data = callback.data
     if data.startswith("search_global:"):
@@ -273,19 +214,19 @@ async def handle_search_type(callback: CallbackQuery, state: FSMContext):
             await callback.message.edit_text(
                 f"Nothing was found for the query: <b>{query}</b>"
             )
-            await state.set_state(MainMenuStates.awaiting_query)
+            await state.set_state(MainMenuStates.waiting_for_query)
             await callback.answer()
             return
         keyboard = get_search_results_keyboard(results, query, page, total_results)
         await callback.message.edit_text(
             f"Found {total_results} for: <b>{query}</b>", reply_markup=keyboard
         )
-        await state.set_state(OmdbSearchStates.waiting_for_omdb_selection)
+        await state.set_state(SearchOmdbStates.waiting_for_omdb_selection)
         await callback.answer()
     # Можно добавить обработку других типов поиска (например, search_local)
 
 
-@omdb_router.callback_query(OmdbSearchStates.waiting_for_omdb_selection)
+@omdb_router.callback_query(SearchOmdbStates.waiting_for_omdb_selection)
 async def handle_omdb_search_selection(callback: CallbackQuery, state: FSMContext):
     data = callback.data
     if data.startswith("omdb_page:"):
@@ -338,7 +279,7 @@ async def handle_omdb_search_selection(callback: CallbackQuery, state: FSMContex
                     entity.id, query, page, entity_type
                 ),
             )
-        await state.set_state(OmdbSearchStates.waiting_for_omdb_action_entity)
+        await state.set_state(SearchOmdbStates.waiting_for_omdb_action_entity)
         await callback.answer()
 
     if data == "noop":
@@ -351,7 +292,7 @@ async def handle_omdb_search_selection(callback: CallbackQuery, state: FSMContex
             "Hi! Enter the name of the movie or TV series to search for:",
             reply_markup=menu_keyboard,
         )
-        await state.set_state(MainMenuStates.awaiting_query)
+        await state.set_state(MainMenuStates.waiting_for_query)
         await callback.answer()
         return
 
@@ -360,7 +301,7 @@ async def handle_omdb_search_selection(callback: CallbackQuery, state: FSMContex
         return
 
 
-@omdb_router.callback_query(OmdbSearchStates.waiting_for_omdb_action_entity)
+@omdb_router.callback_query(SearchOmdbStates.waiting_for_omdb_action_entity)
 async def handle_omdb_entity_actions(callback: CallbackQuery, state: FSMContext):
     data = callback.data
     if data.startswith("back_to_results:"):
@@ -374,7 +315,7 @@ async def handle_omdb_entity_actions(callback: CallbackQuery, state: FSMContext)
 
         success = await show_search_results(callback, query, page, entity_type)
         if success:
-            await state.set_state(OmdbSearchStates.waiting_for_omdb_selection)
+            await state.set_state(SearchOmdbStates.waiting_for_omdb_selection)
             await callback.answer()
             return
 
@@ -416,12 +357,12 @@ async def handle_omdb_entity_actions(callback: CallbackQuery, state: FSMContext)
             )
 
         # Переходим в состояние ожидания выбора статуса
-        await state.set_state(OmdbSearchStates.waiting_for_omdb_entity_add_to_list)
+        await state.set_state(SearchOmdbStates.waiting_for_omdb_entity_add_to_list)
         await callback.answer()
         return
 
 
-@omdb_router.callback_query(OmdbSearchStates.waiting_for_omdb_entity_add_to_list)
+@omdb_router.callback_query(SearchOmdbStates.waiting_for_omdb_entity_add_to_list)
 async def handle_add_to_list_status_selection(
     callback: CallbackQuery, state: FSMContext
 ):
@@ -434,7 +375,7 @@ async def handle_add_to_list_status_selection(
             "Hi! Enter the name of the movie or TV series to search for:",
             reply_markup=menu_keyboard,
         )
-        await state.set_state(MainMenuStates.awaiting_query)
+        await state.set_state(MainMenuStates.waiting_for_query)
         await callback.answer()
         return
 
@@ -480,14 +421,14 @@ async def handle_add_to_list_status_selection(
             success_message = f"{entity.title} has been successfully added with {status_type.name} status"
             await callback.message.delete()
             await callback.message.answer(success_message)
-            await state.set_state(MainMenuStates.awaiting_query)
+            await state.set_state(MainMenuStates.waiting_for_query)
 
         except Exception as e:
             # Обрабатываем ошибку
             error_message = f"Error adding to list: {str(e)}"
             await callback.message.delete()
             await callback.message.answer(error_message)
-            await state.set_state(MainMenuStates.awaiting_query)
+            await state.set_state(MainMenuStates.waiting_for_query)
 
         await callback.answer()
         return

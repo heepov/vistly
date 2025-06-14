@@ -1,7 +1,7 @@
 from peewee import *
 from playhouse.postgres_ext import ArrayField
 from datetime import datetime
-from models.enum_classes import EntityType, StatusType
+from models.enum_classes import EntityType, StatusType, LanguageType
 
 
 def update_timestamp(func):
@@ -24,6 +24,7 @@ class UserDB(BaseModel):
     name = CharField(null=True)
     info = TextField(null=True)
     added_db = DateTimeField(default=datetime.now)
+    language = CharField(default=LanguageType.EN.value)
 
     class Meta:
         table_name = "user_profile"

@@ -2,16 +2,6 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from typing import List, Dict
 
-
-def get_choose_type_search_keyboard(query: str) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.row(
-        InlineKeyboardButton(text="Global", callback_data=f"search_global:{query}"),
-        InlineKeyboardButton(text="Local", callback_data=f"search_local:{query}"),
-    )
-    return builder.as_markup()
-
-
 def get_search_results_keyboard(
     results: List[Dict],
     query: str,
