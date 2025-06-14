@@ -6,7 +6,7 @@ menu_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [
             KeyboardButton(text="Profile"),
-            KeyboardButton(text="Cancel"),
+            KeyboardButton(text="Restart"),
             KeyboardButton(text="List"),
         ],
     ],

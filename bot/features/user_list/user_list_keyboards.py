@@ -2,7 +2,13 @@ from typing import List
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from database.models_db import UserEntityDB, EntityDB
-from models.enum_classes import StatusType
+from models.enum_classes import StatusType, EntityType
+
+status_name_map = {
+    StatusType.PLANNING: "Planing",
+    StatusType.IN_PROGRESS: "In progress",
+    StatusType.COMPLETED: "Completed",
+}
 
 
 def get_user_list_keyboard(
@@ -17,8 +23,12 @@ def get_user_list_keyboard(
     for user_entity in user_entities:
         entity = user_entity.entity
         # Безопасное получение статуса
-        status_text = user_entity.status if user_entity.status else "undefined"
-        btn_text = f"{entity.title} ({entity.release_date}) - {status_text}"
+        status_text = status_name_map.get(
+            user_entity.status,
+            str(user_entity.status).capitalize() if user_entity.status else "Undefined",
+        )
+        year = entity.release_date.year if entity.release_date else "?"
+        btn_text = f"{entity.title} ({year}) | {status_text}"
         builder.row(
             InlineKeyboardButton(
                 text=btn_text,
@@ -51,9 +61,10 @@ def get_user_list_keyboard(
     # Кнопки фильтрации по статусу + кнопка All
     status_buttons = []
     for status_type in StatusType:
+        status_text = status_name_map.get(status_type, str(status_type).capitalize())
         status_buttons.append(
             InlineKeyboardButton(
-                text=status_type.value,
+                text=status_text,
                 callback_data=f"user_list_status:{status_type.value}",
             )
         )
@@ -68,25 +79,44 @@ def get_user_list_keyboard(
     return builder.as_markup()
 
 
-def get_entity_detail_keyboard(user_entity_id, page, status=None):
-    builder = InlineKeyboardBuilder()
-    builder.row(
-        InlineKeyboardButton(
-            text="Rate", callback_data=f"rate_entity:{user_entity_id}"
-        ),
-        InlineKeyboardButton(
-            text="Comment", callback_data=f"comment_entity:{user_entity_id}"
-        ),
-        InlineKeyboardButton(
-            text="Status", callback_data=f"status_entity:{user_entity_id}"
-        ),
-        InlineKeyboardButton(
-            text="Season", callback_data=f"season_entity:{user_entity_id}"
-        ),
+def get_entity_detail_keyboard(user_entity, page):
+    user_entity_id = user_entity.id
+    entity_type = user_entity.entity.type
+    status = user_entity.status
+    rating = user_entity.user_rating
+    current_season = user_entity.current_season
+
+    # Кнопка рейтинга
+    rate_button_name = f"U rate: {rating}" if rating is not None else "Rate it"
+    # Кнопка сезона (только для сериалов)
+    current_season_button_name = (
+        f"U season: {current_season}" if current_season is not None else "Set season"
     )
+    # Кнопка статуса
+    status_button_name = status_name_map.get(
+        status, str(status).capitalize() if status else "Set status"
+    )
+
+    builder = InlineKeyboardBuilder()
+    row_buttons = [
+        InlineKeyboardButton(
+            text=rate_button_name, callback_data=f"rate_entity:{user_entity_id}"
+        ),
+        InlineKeyboardButton(
+            text=status_button_name, callback_data=f"status_entity:{user_entity_id}"
+        ),
+    ]
+    if entity_type == EntityType.SERIES:
+        row_buttons.append(
+            InlineKeyboardButton(
+                text=current_season_button_name,
+                callback_data=f"season_entity:{user_entity_id}",
+            )
+        )
+    builder.row(*row_buttons)
     builder.row(
         InlineKeyboardButton(
-            text="Delete", callback_data=f"delete_entity:{user_entity_id}"
+            text="Remove", callback_data=f"delete_entity:{user_entity_id}"
         ),
         InlineKeyboardButton(
             text="Share", callback_data=f"share_entity:{user_entity_id}"

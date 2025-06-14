@@ -1,18 +1,19 @@
 from aiogram import Router, types
 from aiogram.types import CallbackQuery
-from bot.keyboards.other_keyboards import menu_keyboard
-from bot.keyboards.omdb_search_keyboards import (
+from bot.shared.other_keyboards import menu_keyboard
+from bot.features.search_omdb.omdb_search_keyboards import (
     get_search_results_keyboard,
     get_entity_detail_keyboard,
     get_status_selection_keyboard,
 )
-from services.omdb_service import OMDbService
+from bot.features.search_omdb.omdb_service import OMDbService
 from database.models_db import EntityDB, RatingDB, UserEntityDB, UserDB
 from models.enum_classes import EntityType, StatusType
 from datetime import datetime, date
 from aiogram.fsm.context import FSMContext
 from bot.states.fsm_states import SearchOmdbStates, MainMenuStates, SearchStates
-from bot.utils.message_formater.omdb_search_entity_details import format_entity_details
+from bot.formater.entity_details_formater import format_entity_details
+from models.factories import build_entity_from_db
 
 omdb_router = Router()
 
@@ -197,35 +198,6 @@ async def show_search_results(
     return True
 
 
-@omdb_router.callback_query(SearchStates.waiting_for_search_type)
-async def handle_search_type(callback: CallbackQuery, state: FSMContext):
-    data = callback.data
-    if data.startswith("search_global:"):
-        query = data.split(":", 1)[1]
-        page = 1
-        await callback.message.edit_text("Searching please wait...")
-        omdb_response = await OMDbService.search_movies_series(query, page)
-        results = omdb_response.get("Search", [])
-        try:
-            total_results = int(omdb_response.get("totalResults", 0))
-        except (ValueError, TypeError):
-            total_results = 0
-        if not results:
-            await callback.message.edit_text(
-                f"Nothing was found for the query: <b>{query}</b>"
-            )
-            await state.set_state(MainMenuStates.waiting_for_query)
-            await callback.answer()
-            return
-        keyboard = get_search_results_keyboard(results, query, page, total_results)
-        await callback.message.edit_text(
-            f"Found {total_results} for: <b>{query}</b>", reply_markup=keyboard
-        )
-        await state.set_state(SearchOmdbStates.waiting_for_omdb_selection)
-        await callback.answer()
-    # Можно добавить обработку других типов поиска (например, search_local)
-
-
 @omdb_router.callback_query(SearchOmdbStates.waiting_for_omdb_selection)
 async def handle_omdb_search_selection(callback: CallbackQuery, state: FSMContext):
     data = callback.data
@@ -259,7 +231,8 @@ async def handle_omdb_search_selection(callback: CallbackQuery, state: FSMContex
         # Сохраняем рейтинги
         ratings = omdb_ratings_to_db(entity, details)
         # --- Формируем сообщение ---
-        message = format_entity_details(entity, ratings)
+        entity_full = build_entity_from_db(entity)
+        message = format_entity_details(entity_full)
 
         # --- Отправляем сообщение ---
         poster = OMDbService.get_safe_value(details, "Poster")
@@ -400,9 +373,8 @@ async def handle_add_to_list_status_selection(
             "in_progress": StatusType.IN_PROGRESS,
             "complete": StatusType.COMPLETED,
             "planing": StatusType.PLANNING,
-            "skip": StatusType.UNDEFINED,
         }
-        status_type = status_map.get(status, StatusType.UNDEFINED)
+        status_type = status_map.get(status, StatusType.PLANNING)
 
         try:
             # Получаем сущность

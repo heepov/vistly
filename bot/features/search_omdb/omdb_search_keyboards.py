@@ -2,6 +2,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from typing import List, Dict
 
+
 def get_search_results_keyboard(
     results: List[Dict],
     query: str,
@@ -82,14 +83,13 @@ def get_status_selection_keyboard(entity_id: int) -> InlineKeyboardMarkup:
         InlineKeyboardButton(
             text="Complete", callback_data=f"add_status:{entity_id}:complete"
         ),
-        InlineKeyboardButton(
-            text="Planing", callback_data=f"add_status:{entity_id}:planing"
-        ),
     )
 
     # Второй ряд кнопок
     builder.row(
-        InlineKeyboardButton(text="Skip", callback_data=f"add_status:{entity_id}:skip"),
+        InlineKeyboardButton(
+            text="Planing", callback_data=f"add_status:{entity_id}:planing"
+        ),
         InlineKeyboardButton(text="Cancel", callback_data="cancel_add_to_list"),
     )
 

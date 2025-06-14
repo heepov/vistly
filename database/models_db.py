@@ -81,10 +81,9 @@ class UserEntityDB(BaseModel):
     entity = ForeignKeyField(EntityDB, backref="user_entities")
     status = CharField(
         choices=[(tag.value, tag.value) for tag in StatusType],
-        default=StatusType.UNDEFINED.value,
+        default=StatusType.PLANNING.value,
     )
     user_rating = IntegerField(null=True)
-    comment = TextField(null=True)
     current_season = IntegerField(null=True)
     added_db = DateTimeField(default=datetime.now)
     updated_db = DateTimeField(default=datetime.now)

@@ -1,19 +1,19 @@
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
-from bot.keyboards.user_list_keyboards import (
+from bot.features.user_list.user_list_keyboards import (
     get_user_list_keyboard,
     get_entity_detail_keyboard,
 )
 from database.models_db import UserEntityDB, UserDB
 from models.enum_classes import StatusType
-from bot.states.fsm_states import MainMenuStates
-from bot.keyboards.other_keyboards import menu_keyboard
-from bot.utils.message_formater.user_list_entity_details import format_entity_details
+from bot.states.fsm_states import MainMenuStates, UserListStates
+from bot.shared.other_keyboards import menu_keyboard
+from bot.formater.entity_details_formater import format_entity_details
 from database.models_db import UserEntityDB
+from aiogram import Router, types
+from models.factories import build_entity_from_db
 
-from aiogram import Router
-
-usrl_list_router = Router()
+user_list_router = Router()
 
 
 async def show_user_list(
@@ -48,7 +48,11 @@ async def show_user_list(
         return False
 
     # Получаем список фильмов пользователя
-    query = UserEntityDB.select().where(UserEntityDB.user_id == user).order_by(UserEntityDB.updated_db.desc())
+    query = (
+        UserEntityDB.select()
+        .where(UserEntityDB.user_id == user)
+        .order_by(UserEntityDB.updated_db.desc())
+    )
     if status:
         query = query.where(UserEntityDB.status == status)
 
@@ -105,7 +109,28 @@ async def show_user_list(
     return True
 
 
-@usrl_list_router.callback_query(lambda c: c.data.startswith("user_list_page:"))
+@user_list_router.message(lambda m: m.text == "List" or m.text == "/list")
+async def handle_list(message: types.Message, state: FSMContext):
+    # Показываем список фильмов пользователя
+    success = await show_user_list(
+        callback=message,  # передаем message как callback
+        page=1,  # начинаем с первой страницы
+        status=None,  # показываем все фильмы
+        state=state,
+    )
+
+    if success:
+        await state.set_state(UserListStates.waiting_for_list_selection)
+    else:
+        # Если список пуст, возвращаемся в главное меню
+        await state.set_state(MainMenuStates.waiting_for_query)
+        await message.answer(
+            "Hi! Enter the name of the movie or TV series to search for:",
+            reply_markup=menu_keyboard,
+        )
+
+
+@user_list_router.callback_query(lambda c: c.data.startswith("user_list_page:"))
 async def handle_user_list_pagination(callback: CallbackQuery, state: FSMContext):
     try:
         # user_list_page:{page}:{status}
@@ -121,7 +146,7 @@ async def handle_user_list_pagination(callback: CallbackQuery, state: FSMContext
         await callback.answer()
 
 
-@usrl_list_router.callback_query(lambda c: c.data.startswith("user_list_status:"))
+@user_list_router.callback_query(lambda c: c.data.startswith("user_list_status:"))
 async def handle_user_list_status_filter(callback: CallbackQuery, state: FSMContext):
     try:
         # user_list_status:{status}
@@ -139,7 +164,7 @@ async def handle_user_list_status_filter(callback: CallbackQuery, state: FSMCont
         await callback.answer()
 
 
-@usrl_list_router.callback_query(lambda c: c.data == "back_to_menu")
+@user_list_router.callback_query(lambda c: c.data == "back_to_menu")
 async def handle_back_to_menu(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     await callback.message.answer(
@@ -151,7 +176,7 @@ async def handle_back_to_menu(callback: CallbackQuery, state: FSMContext):
     return
 
 
-@usrl_list_router.callback_query(lambda c: c.data.startswith("user_entity_select:"))
+@user_list_router.callback_query(lambda c: c.data.startswith("user_entity_select:"))
 async def handle_user_entity_select(callback: CallbackQuery, state: FSMContext):
     try:
         # user_entity_select:{user_entity_id}:{page}:{status}
@@ -171,23 +196,17 @@ async def handle_user_entity_select(callback: CallbackQuery, state: FSMContext):
     entity = user_entity.entity
 
     # Формируем текст и постер
-    text, poster_url = format_entity_details(
-        entity,
-        user_status=user_entity.status,
-        user_season=getattr(user_entity, "season", None),
-        user_rating=getattr(user_entity, "user_rating", None),
-        user_comment=getattr(user_entity, "comment", None),
-        poster_url=getattr(entity, "poster_url", None),
-    )
+    entity_full = build_entity_from_db(entity)
+    text = format_entity_details(entity_full)
 
     # Используем готовую функцию для клавиатуры
-    keyboard = get_entity_detail_keyboard(user_entity.id, page, status)
+    keyboard = get_entity_detail_keyboard(user_entity, page)
 
     # Показываем сообщение
-    if poster_url:
+    if entity.poster_url:
         await callback.message.delete()
         await callback.message.answer_photo(
-            poster_url, caption=text, reply_markup=keyboard
+            entity.poster_url, caption=text, reply_markup=keyboard
         )
     else:
         await callback.message.edit_text(text, reply_markup=keyboard)

@@ -5,7 +5,7 @@ from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 
 from config.config import load_config
-from bot.handlers.main_commad_handlers import router
+from bot.shared.main_commad_handlers import router
 from database.connection import setup_database
 
 logger = logging.getLogger(__name__)

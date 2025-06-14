@@ -14,7 +14,6 @@ class StatusType(str, Enum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     PLANNING = "planning"
-    UNDEFINED = "undefined"
 
 
 class LanguageType(str, Enum):
