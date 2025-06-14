@@ -3,17 +3,26 @@ from aiogram.fsm.context import FSMContext
 from bot.features.user_list.user_list_keyboards import (
     get_user_list_keyboard,
     get_entity_detail_keyboard,
+    get_rating_keyboard,
+    get_status_keyboard,
+    get_delete_confirm_keyboard,
 )
 from database.models_db import UserEntityDB, UserDB
 from models.enum_classes import StatusType
 from bot.states.fsm_states import MainMenuStates, UserListStates
 from bot.shared.other_keyboards import menu_keyboard
-from bot.formater.entity_details_formater import format_entity_details
+from bot.formater.message_formater import format_entity_details
 from database.models_db import UserEntityDB
 from aiogram import Router, types
 from models.factories import build_entity_from_db
 
 user_list_router = Router()
+
+status_name_map = {
+    StatusType.PLANNING: "Planing",
+    StatusType.IN_PROGRESS: "In progress",
+    StatusType.COMPLETED: "Completed",
+}
 
 
 async def show_user_list(
@@ -53,9 +62,11 @@ async def show_user_list(
         .where(UserEntityDB.user_id == user)
         .order_by(UserEntityDB.updated_db.desc())
     )
+    print(f"query = {list(query.paginate(page, 10))}")
+    print(f"status = {status}")
     if status:
         query = query.where(UserEntityDB.status == status)
-
+    print(f"query after = {list(query.paginate(page, 10))}")
     total_results = query.count()
     if not total_results:
         if isinstance(callback, CallbackQuery):
@@ -75,8 +86,9 @@ async def show_user_list(
         return False
 
     # Получаем страницу результатов
-    user_entities = query.paginate(page, 10)
-    print(f"user_entities = {user_entities}")
+    # user_entities = query.paginate(page, 10)
+    user_entities = list(query.paginate(page, 10))
+    # print(f"user_entities = {user_entities}")
     keyboard = get_user_list_keyboard(
         user_entities=user_entities,
         page=page,
@@ -84,26 +96,32 @@ async def show_user_list(
         status=status,
     )
 
+    status_text = status_name_map.get(
+        status,
+        str(status).capitalize() if status else "All",
+    )
     # Проверяем тип callback и наличие фото
     if isinstance(callback, CallbackQuery):
         has_photo = getattr(callback.message, "photo", None) is not None
         if has_photo:
             await callback.message.delete()
             await callback.message.answer(
-                f"Your list ({total_results} items):",
+                f"Your <b>{status_text}</b> list has <b>{total_results}</b> items:",
                 reply_markup=keyboard,
                 parse_mode="HTML",
             )
         else:
             await callback.message.edit_text(
-                f"Your list ({total_results} items):",
+                f"Your <b>{status_text}</b> list has <b>{total_results}</b> items:",
                 reply_markup=keyboard,
+                parse_mode="HTML",
             )
     else:
         # Если это Message, просто отправляем новое сообщение
         await callback.answer(
-            f"Your list ({total_results} items):",
+            f"Your <b>{status_text}</b> list has <b>{total_results}</b> items:",
             reply_markup=keyboard,
+            parse_mode="HTML",
         )
 
     return True
@@ -136,6 +154,9 @@ async def handle_user_list_pagination(callback: CallbackQuery, state: FSMContext
         # user_list_page:{page}:{status}
         _, page, status = callback.data.split(":", 2)
         page = int(page)
+        # print(f"page = {page}, status = {status}")
+        # print(f"callback.data = {callback.data}")
+        # print(f"state = {state}")
         status = StatusType(status) if status != "all" else None
     except (ValueError, IndexError):
         await callback.answer("Invalid callback data")
@@ -200,7 +221,7 @@ async def handle_user_entity_select(callback: CallbackQuery, state: FSMContext):
     text = format_entity_details(entity_full)
 
     # Используем готовую функцию для клавиатуры
-    keyboard = get_entity_detail_keyboard(user_entity, page)
+    keyboard = get_entity_detail_keyboard(user_entity, page, status)
 
     # Показываем сообщение
     if entity.poster_url:
@@ -211,3 +232,185 @@ async def handle_user_entity_select(callback: CallbackQuery, state: FSMContext):
     else:
         await callback.message.edit_text(text, reply_markup=keyboard)
     await callback.answer()
+
+
+@user_list_router.callback_query(lambda c: c.data.startswith("rate_entity:"))
+async def ask_rating(callback: CallbackQuery, state: FSMContext):
+    _, user_entity_id, page, status = callback.data.split(":")
+    await state.set_state(UserListStates.waiting_for_list_entity_change_rating)
+    await state.update_data(user_entity_id=user_entity_id, page=page, status=status)
+    if getattr(callback.message, "photo", None):
+        await callback.message.delete()
+        await callback.message.answer(
+            "Please rate Entity name", reply_markup=get_rating_keyboard(user_entity_id)
+        )
+    else:
+        await callback.message.edit_text(
+            "Please rate Entity name", reply_markup=get_rating_keyboard(user_entity_id)
+        )
+    await callback.answer()
+
+
+@user_list_router.callback_query(UserListStates.waiting_for_list_entity_change_rating)
+async def set_rating(callback: CallbackQuery, state: FSMContext):
+    if callback.data.startswith("set_rating:"):
+        _, user_entity_id, rating = callback.data.split(":")
+        user_entity = UserEntityDB.get_by_id(int(user_entity_id))
+        user_entity.user_rating = int(rating)
+        user_entity.save()
+        # Вернуть к entity info
+        await state.set_state(UserListStates.waiting_for_list_action_entity)
+        await show_entity_info(callback, user_entity, state)
+    elif callback.data.startswith("back_to_entity:"):
+        _, user_entity_id = callback.data.split(":")
+        user_entity = UserEntityDB.get_by_id(int(user_entity_id))
+        await state.set_state(UserListStates.waiting_for_list_action_entity)
+        await show_entity_info(callback, user_entity, state)
+    await callback.answer()
+
+
+@user_list_router.callback_query(lambda c: c.data.startswith("status_entity:"))
+async def ask_status(callback: CallbackQuery, state: FSMContext):
+    _, user_entity_id, page, status = callback.data.split(":")
+    await state.set_state(UserListStates.waiting_for_list_entity_change_status)
+    await state.update_data(user_entity_id=user_entity_id, page=page, status=status)
+    if getattr(callback.message, "photo", None):
+        await callback.message.delete()
+        await callback.message.answer(
+            "Select status for Entity name",
+            reply_markup=get_status_keyboard(user_entity_id),
+        )
+    else:
+        await callback.message.edit_text(
+            "Select status for Entity name",
+            reply_markup=get_status_keyboard(user_entity_id),
+        )
+    await callback.answer()
+
+
+@user_list_router.callback_query(UserListStates.waiting_for_list_entity_change_status)
+async def set_status(callback: CallbackQuery, state: FSMContext):
+    if callback.data.startswith("set_status:"):
+        _, user_entity_id, status = callback.data.split(":")
+        user_entity = UserEntityDB.get_by_id(int(user_entity_id))
+        user_entity.status = status
+        user_entity.save()
+        await state.set_state(UserListStates.waiting_for_list_action_entity)
+        await show_entity_info(callback, user_entity, state)
+    elif callback.data.startswith("back_to_entity:"):
+        _, user_entity_id = callback.data.split(":")
+        user_entity = UserEntityDB.get_by_id(int(user_entity_id))
+        await state.set_state(UserListStates.waiting_for_list_action_entity)
+        await show_entity_info(callback, user_entity, state)
+    await callback.answer()
+
+
+@user_list_router.callback_query(lambda c: c.data.startswith("season_entity:"))
+async def ask_season(callback: CallbackQuery, state: FSMContext):
+    _, user_entity_id, page, status = callback.data.split(":")
+    await state.set_state(UserListStates.waiting_for_list_entity_change_season)
+    await state.update_data(user_entity_id=user_entity_id, page=page, status=status)
+    if getattr(callback.message, "photo", None):
+        await callback.message.delete()
+        await callback.message.answer(
+            f"Send season number (1-999)\nSend 0 to reset season count. Any other text to cancel.",
+        )
+    else:
+        await callback.message.edit_text(
+            f"Send season number (1-999)\nSend 0 to reset season count. Any other text to cancel.",
+        )
+    await callback.answer()
+
+
+@user_list_router.message(UserListStates.waiting_for_list_entity_change_season)
+async def set_season(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    user_entity_id = data["user_entity_id"]
+    user_entity = UserEntityDB.get_by_id(int(user_entity_id))
+
+    if message.text.isdigit():
+        season = int(message.text)
+        if 0 < season < 1000:
+            user_entity.current_season = season
+            user_entity.save()
+        elif season == 0:
+            user_entity.current_season = None
+            user_entity.save()
+
+    await state.set_state(UserListStates.waiting_for_list_action_entity)
+    await show_entity_info(message, user_entity, state)
+
+
+@user_list_router.callback_query(lambda c: c.data.startswith("delete_entity:"))
+async def ask_delete(callback: CallbackQuery, state: FSMContext):
+    _, user_entity_id, page, status = callback.data.split(":")
+    await state.set_state(UserListStates.waiting_for_list_entity_delete_entity)
+    await state.update_data(user_entity_id=user_entity_id, page=page, status=status)
+    if getattr(callback.message, "photo", None):
+        await callback.message.delete()
+        await callback.message.answer(
+            "Are you sure you want to delete this entity?",
+            reply_markup=get_delete_confirm_keyboard(user_entity_id),
+        )
+    else:
+        await callback.message.edit_text(
+            "Are you sure you want to delete this entity?",
+            reply_markup=get_delete_confirm_keyboard(user_entity_id),
+        )
+    await callback.answer()
+
+
+@user_list_router.callback_query(UserListStates.waiting_for_list_entity_delete_entity)
+async def confirm_delete(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    page = int(data.get("page", 1))
+    status = data.get("status", None)
+    if callback.data.startswith("delete_confirm:"):
+        _, user_entity_id, answer = callback.data.split(":")
+        if answer == "yes":
+            UserEntityDB.get_by_id(int(user_entity_id)).delete_instance()
+            await callback.message.edit_text("Entity deleted from your list.")
+            # Возврат к списку с теми же page и status
+            await show_user_list(callback, page, status, state)
+        else:
+            user_entity = UserEntityDB.get_by_id(int(user_entity_id))
+            await state.set_state(UserListStates.waiting_for_list_action_entity)
+            await show_entity_info(callback, user_entity, state, page, status)
+    elif callback.data.startswith("back_to_entity:"):
+        _, user_entity_id = callback.data.split(":")
+        user_entity = UserEntityDB.get_by_id(int(user_entity_id))
+        await state.set_state(UserListStates.waiting_for_list_action_entity)
+        await show_entity_info(callback, user_entity, state, page, status)
+    await callback.answer()
+
+
+async def show_entity_info(event, user_entity, state, page=1, status=None):
+    """
+    Показывает детальную информацию о фильме/сериале для user_entity.
+    """
+    entity = user_entity.entity
+    entity_full = build_entity_from_db(entity)
+    text = format_entity_details(entity_full)
+    keyboard = get_entity_detail_keyboard(user_entity, page, status)
+
+    if entity.poster_url:
+        if hasattr(event, "message"):
+            await event.message.delete()
+            await event.message.answer_photo(
+                entity.poster_url, caption=text, reply_markup=keyboard
+            )
+        else:
+            await event.answer_photo(
+                entity.poster_url, caption=text, reply_markup=keyboard
+            )
+    else:
+        if hasattr(event, "message"):
+            await event.message.edit_text(text, reply_markup=keyboard)
+        else:
+            await event.answer(text, reply_markup=keyboard)
+
+
+@user_list_router.callback_query(lambda c: c.data.startswith("share_entity:"))
+async def share_entity(callback: CallbackQuery, state: FSMContext):
+    await callback.answer("Feature is developing", show_alert=False)
+    return

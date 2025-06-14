@@ -28,6 +28,5 @@ class UserListStates(StatesGroup):
     waiting_for_list_action_entity = State()
     waiting_for_list_entity_change_status = State()
     waiting_for_list_entity_change_rating = State()
-    waiting_for_list_entity_change_comment = State()
     waiting_for_list_entity_change_season = State()
     waiting_for_list_entity_delete_entity = State()

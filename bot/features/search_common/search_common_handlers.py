@@ -57,4 +57,7 @@ async def handle_search_type(callback: CallbackQuery, state: FSMContext):
         )
         await state.set_state(SearchOmdbStates.waiting_for_omdb_selection)
         await callback.answer()
+    elif data.startswith("search_local:"):
+        await callback.answer("Feature is developing", show_alert=False)
+        return
     # Можно добавить обработку других типов поиска (например, search_local)

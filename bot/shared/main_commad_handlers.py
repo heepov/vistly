@@ -69,5 +69,5 @@ async def cmd_help(message: types.Message):
     lambda m: m.text and m.text.startswith("/") and m.text[1:] not in command_list
 )
 async def handle_all_commands(message: types.Message):
-    command = message.text[1:].split()[0]  # получаем команду без /
+    command = message.text[1:].split()[0]
     await message.answer(f"Получена команда: {command}")

@@ -20,6 +20,7 @@ def get_user_list_keyboard(
     builder = InlineKeyboardBuilder()
 
     # Кнопки с результатами (до 10)
+    print(f"user_entities = {user_entities}")
     for user_entity in user_entities:
         entity = user_entity.entity
         # Безопасное получение статуса
@@ -34,6 +35,9 @@ def get_user_list_keyboard(
                 text=btn_text,
                 callback_data=f"user_entity_select:{user_entity.id}:{page}:{status.value if status else 'all'}",
             )
+        )
+        print(
+            f"Кнопка: {btn_text}, callback_data: {f"user_entity_select:{user_entity.id}:{page}:{status.value if status else 'all'}"}"
         )
 
     # Пагинация
@@ -58,31 +62,34 @@ def get_user_list_keyboard(
         )
     builder.row(*pagination_row)
 
-    # Кнопки фильтрации по статусу + кнопка All
-    status_buttons = []
-    for status_type in StatusType:
-        status_text = status_name_map.get(status_type, str(status_type).capitalize())
-        status_buttons.append(
-            InlineKeyboardButton(
-                text=status_text,
-                callback_data=f"user_list_status:{status_type.value}",
-            )
-        )
-    builder.row(*status_buttons)
+    builder.row(
+        InlineKeyboardButton(
+            text="Completed",
+            callback_data=f"user_list_status:{StatusType.COMPLETED.value}",
+        ),
+        InlineKeyboardButton(
+            text="In progress",
+            callback_data=f"user_list_status:{StatusType.IN_PROGRESS.value}",
+        ),
+        InlineKeyboardButton(
+            text="Planing",
+            callback_data=f"user_list_status:{StatusType.PLANNING.value}",
+        ),
+        InlineKeyboardButton(text="All", callback_data="user_list_status:all"),
+    )
 
     # Кнопка возврата
     builder.row(
-        InlineKeyboardButton(text="All", callback_data="user_list_status:all"),
+        # InlineKeyboardButton(text="All", callback_data="user_list_status:all"),
         InlineKeyboardButton(text="Back to Menu", callback_data="back_to_menu"),
     )
 
     return builder.as_markup()
 
 
-def get_entity_detail_keyboard(user_entity, page):
+def get_entity_detail_keyboard(user_entity, page, status):
     user_entity_id = user_entity.id
     entity_type = user_entity.entity.type
-    status = user_entity.status
     rating = user_entity.user_rating
     current_season = user_entity.current_season
 
@@ -94,36 +101,93 @@ def get_entity_detail_keyboard(user_entity, page):
     )
     # Кнопка статуса
     status_button_name = status_name_map.get(
-        status, str(status).capitalize() if status else "Set status"
+        user_entity.status,
+        str(user_entity.status).capitalize() if user_entity.status else "Set status",
     )
 
     builder = InlineKeyboardBuilder()
     row_buttons = [
         InlineKeyboardButton(
-            text=rate_button_name, callback_data=f"rate_entity:{user_entity_id}"
+            text=rate_button_name,
+            callback_data=f"rate_entity:{user_entity_id}:{page}:{status if status else 'all'}",
         ),
         InlineKeyboardButton(
-            text=status_button_name, callback_data=f"status_entity:{user_entity_id}"
+            text=status_button_name,
+            callback_data=f"status_entity:{user_entity_id}:{page}:{status if status else 'all'}",
         ),
     ]
     if entity_type == EntityType.SERIES:
         row_buttons.append(
             InlineKeyboardButton(
                 text=current_season_button_name,
-                callback_data=f"season_entity:{user_entity_id}",
+                callback_data=f"season_entity:{user_entity_id}:{page}:{status if status else 'all'}",
             )
         )
     builder.row(*row_buttons)
     builder.row(
         InlineKeyboardButton(
-            text="Remove", callback_data=f"delete_entity:{user_entity_id}"
+            text="Remove",
+            callback_data=f"delete_entity:{user_entity_id}:{page}:{status if status else 'all'}",
         ),
         InlineKeyboardButton(
-            text="Share", callback_data=f"share_entity:{user_entity_id}"
+            text="Share",
+            callback_data=f"share_entity:{user_entity_id}:{page}:{status if status else 'all'}",
         ),
         InlineKeyboardButton(
             text="Back",
             callback_data=f"user_list_page:{page}:{status if status else 'all'}",
+        ),
+    )
+    return builder.as_markup()
+
+
+def get_rating_keyboard(user_entity_id):
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        *[
+            InlineKeyboardButton(
+                text=str(i), callback_data=f"set_rating:{user_entity_id}:{i}"
+            )
+            for i in range(1, 6)
+        ]
+    )
+    builder.row(
+        InlineKeyboardButton(
+            text="Back", callback_data=f"back_to_entity:{user_entity_id}"
+        )
+    )
+    return builder.as_markup()
+
+
+def get_status_keyboard(user_entity_id):
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(
+            text="Completed", callback_data=f"set_status:{user_entity_id}:completed"
+        ),
+        InlineKeyboardButton(
+            text="In progress", callback_data=f"set_status:{user_entity_id}:in_progress"
+        ),
+        InlineKeyboardButton(
+            text="Planning", callback_data=f"set_status:{user_entity_id}:planning"
+        ),
+    )
+    builder.row(
+        InlineKeyboardButton(
+            text="Back", callback_data=f"back_to_entity:{user_entity_id}"
+        )
+    )
+    return builder.as_markup()
+
+
+def get_delete_confirm_keyboard(user_entity_id):
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(
+            text="Yes", callback_data=f"delete_confirm:{user_entity_id}:yes"
+        ),
+        InlineKeyboardButton(
+            text="No", callback_data=f"back_to_entity:{user_entity_id}"
         ),
     )
     return builder.as_markup()

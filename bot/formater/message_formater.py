@@ -11,7 +11,7 @@ def format_entity_details(entity: Entity) -> str:
         elif rating.source == "Rotten Tomatoes":
             rating_parts.append(f"RT - {rating.value}")
         elif rating.source == "Metacritic":
-            rating_parts.append(f"Meta - {rating.value}")
+            rating_parts.append(f"MC - {rating.value}")
     rating_str = " | ".join(rating_parts) if rating_parts else None
 
     # Заголовок
@@ -20,7 +20,7 @@ def format_entity_details(entity: Entity) -> str:
         year_str = f"{year_str} - {entity.year_end}"
     header = f"<code>{entity.title} ({year_str})</code> - {entity.type.capitalize()}"
 
-    # Quote-блок (одна строка с \n внутри)
+    # Quote-блок
     quote_lines = []
     if rating_str:
         quote_lines.append(f"<b>Rating:</b> {rating_str}")

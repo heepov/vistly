@@ -12,7 +12,7 @@ from models.enum_classes import EntityType, StatusType
 from datetime import datetime, date
 from aiogram.fsm.context import FSMContext
 from bot.states.fsm_states import SearchOmdbStates, MainMenuStates, SearchStates
-from bot.formater.entity_details_formater import format_entity_details
+from bot.formater.message_formater import format_entity_details
 from models.factories import build_entity_from_db
 
 omdb_router = Router()
