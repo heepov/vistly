@@ -232,29 +232,40 @@ async def handle_omdb_search_selection(callback: CallbackQuery, state: FSMContex
             await callback.answer("Invalid callback data")
             return
 
-        # Получить детали фильма
-        details = await OMDbService.get_item_details(imdb_id)
-        # --- Добавить в базу ---
-        entity, created = omdb_details_to_db(details)
-        # Сохраняем рейтинги
-        ratings = omdb_ratings_to_db(entity, details)
+        # imdb_id — это строка или число, который ты получил из запроса
+        entity = EntityDB.get_or_none(src_id=imdb_id)
+        if not entity:
+            # Фильма нет в базе — делаем запрос к API
+            details = await OMDbService.get_item_details(imdb_id)
+            print(f"OMDbService get")
+            # --- Добавить в базу ---
+            entity, created = omdb_details_to_db(details)
+            # Сохраняем рейтинги
+            ratings = omdb_ratings_to_db(entity, details)
+
         # --- Формируем сообщение ---
         entity_full = build_entity_from_db(entity)
         message = format_entity_details(entity_full, lang)
 
         # --- Отправляем сообщение ---
-        poster = OMDbService.get_safe_value(details, "Poster")
         already_added = False
         if user:
             already_added = (
                 UserEntityDB.select()
-                .where((UserEntityDB.user_id == user) & (UserEntityDB.entity == entity))
+                .join(EntityDB)
+                .where(
+                    (UserEntityDB.user_id == user)
+                    & (
+                        (UserEntityDB.entity == entity)
+                        | (EntityDB.src_id == entity.src_id)
+                    )
+                )
                 .exists()
             )
-        if poster and poster != "N/A":
+        if entity_full.poster_url and entity_full.poster_url != "N/A":
             await callback.message.delete()
             await callback.message.answer_photo(
-                poster,
+                entity_full.poster_url,
                 caption=message,
                 reply_markup=get_entity_detail_keyboard(
                     entity.id,

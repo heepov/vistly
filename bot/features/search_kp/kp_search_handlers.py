@@ -203,23 +203,35 @@ async def handle_kp_search_selection(callback: CallbackQuery, state: FSMContext)
             await callback.answer("Invalid callback data")
             return
 
-        # Получить детали фильма
-        details = await KpService.get_item_details(kp_id)
-        # --- Добавить в базу ---
-        entity, created = kp_details_to_db(details)
-        # Сохраняем рейтинги
-        ratings = kp_ratings_to_db(entity, details)
-        # --- Формируем сообщение ---
+        # kp_id — это строка или число, который ты получил из запроса
+        entity = EntityDB.get_or_none(kp_id=kp_id)
+
+        if not entity:
+            # Фильма нет в базе — делаем запрос к API
+            details = await KpService.get_item_details(kp_id)
+            print(f"KpService get")
+            # --- Добавить в базу ---
+            entity, created = kp_details_to_db(details)
+            # Сохраняем рейтинги
+            ratings = kp_ratings_to_db(entity, details)
+            # --- Формируем сообщение ---
+
         entity_full = build_entity_from_db(entity)
         message = format_entity_details(entity_full, lang)
 
         # --- Отправляем сообщение ---
-
         already_added = False
         if user:
             already_added = (
                 UserEntityDB.select()
-                .where((UserEntityDB.user_id == user) & (UserEntityDB.entity == entity))
+                .join(EntityDB)
+                .where(
+                    (UserEntityDB.user_id == user)
+                    & (
+                        (UserEntityDB.entity == entity)
+                        | (EntityDB.src_id == entity.src_id)
+                    )
+                )
                 .exists()
             )
         if entity_full.poster_url and entity_full.poster_url != "N/A":
