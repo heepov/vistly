@@ -60,6 +60,7 @@ STRINGS = {
         "confirm": "Confirm",
         "already_added": "Already added",
         "unknown_command": "Unknown command. Use /help for help.",
+        "min": "min",
     },
     "ru": {
         "lang_choose": "Выберите язык / Choose language:",
@@ -122,6 +123,7 @@ STRINGS = {
         "confirm": "Подтвердить",
         "already_added": "Уже добавлено",
         "unknown_command": "Неизвестная команда. Используйте /help для получения помощи.",
+        "min": "мин",
     },
 }
 

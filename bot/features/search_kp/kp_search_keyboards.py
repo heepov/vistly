@@ -17,7 +17,7 @@ def get_search_results_keyboard_kp(
     for item in results:
         title = item.get("name", "No title")
         year = item.get("year", "?")
-        type_ = item.get("type", "?")
+        type_ = "series" if item.get("isSeries", False) else "movie"
         kp_id = item.get("id", "?")
         btn_text = f"{title} ({year}) - {get_string(type_.lower(), lang)}"
         builder.row(

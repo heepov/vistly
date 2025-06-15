@@ -1,18 +1,25 @@
 from models.models import Entity
 from bot.utils.strings import get_string
 
+MAX_MESSAGE_LENGTH = 900
+
 
 def format_entity_details(entity: Entity, lang: str = "en") -> str:
     """Формирует сообщение с деталями фильма/сериала"""
     # Собираем рейтинги для вывода
     rating_parts = []
     for rating in entity.ratings:
-        if rating.source == "Internet Movie Database":
+        if rating.value == 0:
+            continue
+        if rating.source in ["Internet Movie Database", "IMDB"]:
             rating_parts.append(f"IMDb - {rating.value}")
         elif rating.source == "Rotten Tomatoes":
             rating_parts.append(f"RT - {rating.value}")
         elif rating.source == "Metacritic":
             rating_parts.append(f"MC - {rating.value}")
+        elif rating.source == "KP":
+            rating_parts.append(f"KP - {rating.value}")
+
     rating_str = " | ".join(rating_parts) if rating_parts else None
 
     # Заголовок
@@ -29,7 +36,7 @@ def format_entity_details(entity: Entity, lang: str = "en") -> str:
         quote_lines.append(f"<b>{get_string('rating', lang)}:</b> {rating_str}")
     if entity.duration:
         quote_lines.append(
-            f"<b>{get_string('runtime', lang)}:</b> {entity.duration} min"
+            f"<b>{get_string('runtime', lang)}:</b> {entity.duration} {get_string('min', lang)}"
         )
     if entity.total_season:
         quote_lines.append(
@@ -54,9 +61,12 @@ def format_entity_details(entity: Entity, lang: str = "en") -> str:
     quote_block = (
         "<blockquote>" + "\n".join(quote_lines) + "</blockquote>" if quote_lines else ""
     )
+    message_length = MAX_MESSAGE_LENGTH - len(f"{header}\n\n{quote_block}\n\n")
 
     # Описание
     description = entity.description if entity.description else ""
+    if len(description) > message_length:
+        description = description[: message_length - 3] + "..."
 
     # Собираем всё вместе (без лишних переносов)
     if quote_block and description:
