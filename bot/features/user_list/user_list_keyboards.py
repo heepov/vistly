@@ -12,6 +12,7 @@ def get_user_list_keyboard(
     total_results: int,
     status: StatusType = None,
     lang: str = "en",
+    query: str = None,
 ) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
@@ -23,7 +24,7 @@ def get_user_list_keyboard(
         builder.row(
             InlineKeyboardButton(
                 text=btn_text,
-                callback_data=f"user_entity_select:{user_entity.id}:{page}:{status.value if status else 'all'}",
+                callback_data=f"user_entity_select:{user_entity.id}:{page}:{status.value if status else 'all'}:{query or ''}",
             )
         )
 
@@ -34,7 +35,7 @@ def get_user_list_keyboard(
         pagination_row.append(
             InlineKeyboardButton(
                 text="◀️",
-                callback_data=f"user_list_page:{page-1}:{status.value if status else 'all'}",
+                callback_data=f"user_list_page:{page-1}:{status.value if status else 'all'}:{query or ''}",
             )
         )
     pagination_row.append(
@@ -49,7 +50,7 @@ def get_user_list_keyboard(
         pagination_row.append(
             InlineKeyboardButton(
                 text="▶️",
-                callback_data=f"user_list_page:{page+1}:{status.value if status else 'all'}",
+                callback_data=f"user_list_page:{page+1}:{status.value if status else 'all'}:{query or ''}",
             )
         )
     builder.row(*pagination_row)
@@ -57,22 +58,22 @@ def get_user_list_keyboard(
     builder.row(
         InlineKeyboardButton(
             text=get_string("completed", lang),
-            callback_data=f"user_list_status:{StatusType.COMPLETED.value}",
+            callback_data=f"user_list_status:{StatusType.COMPLETED.value}:{query or ''}",
         ),
         InlineKeyboardButton(
             text=get_string("in_progress", lang),
-            callback_data=f"user_list_status:{StatusType.IN_PROGRESS.value}",
+            callback_data=f"user_list_status:{StatusType.IN_PROGRESS.value}:{query or ''}",
         ),
         InlineKeyboardButton(
             text=get_string("planning", lang),
-            callback_data=f"user_list_status:{StatusType.PLANNING.value}",
+            callback_data=f"user_list_status:{StatusType.PLANNING.value}:{query or ''}",
         ),
     )
 
-    # Кнопка возврата
     builder.row(
         InlineKeyboardButton(
-            text=get_string("all", lang), callback_data="user_list_status:all"
+            text=get_string("all", lang),
+            callback_data=f"user_list_status:all:{query or ''}",
         ),
         InlineKeyboardButton(
             text=get_string("cancel", lang), callback_data="back_to_menu"
@@ -82,7 +83,7 @@ def get_user_list_keyboard(
     return builder.as_markup()
 
 
-def get_entity_detail_keyboard(user_entity, page, status, lang: str = "en"):
+def get_entity_detail_keyboard(user_entity, page, status, query, lang: str = "en"):
     user_entity_id = user_entity.id
     entity_type = user_entity.entity.type
     rating = user_entity.user_rating
@@ -102,49 +103,49 @@ def get_entity_detail_keyboard(user_entity, page, status, lang: str = "en"):
     )
     # Кнопка статуса
     status_button_name = get_status_string(user_entity.status, lang)
-
     builder = InlineKeyboardBuilder()
     row_buttons = [
         InlineKeyboardButton(
             text=rate_button_name,
-            callback_data=f"rate_entity:{user_entity_id}:{page}:{status if status else 'all'}",
+            callback_data=f"rate_entity:{user_entity_id}:{page}:{status if status else 'all'}:{query or ''}",
         ),
         InlineKeyboardButton(
             text=status_button_name,
-            callback_data=f"status_entity:{user_entity_id}:{page}:{status if status else 'all'}",
+            callback_data=f"status_entity:{user_entity_id}:{page}:{status if status else 'all'}:{query or ''}",
         ),
     ]
     if entity_type == EntityType.SERIES:
         row_buttons.append(
             InlineKeyboardButton(
                 text=current_season_button_name,
-                callback_data=f"season_entity:{user_entity_id}:{page}:{status if status else 'all'}",
+                callback_data=f"season_entity:{user_entity_id}:{page}:{status if status else 'all'}:{query or ''}",
             )
         )
     builder.row(*row_buttons)
     builder.row(
         InlineKeyboardButton(
             text=get_string("delete", lang),
-            callback_data=f"delete_entity:{user_entity_id}:{page}:{status if status else 'all'}",
+            callback_data=f"delete_entity:{user_entity_id}:{page}:{status if status else 'all'}:{query or ''}",
         ),
         InlineKeyboardButton(
             text=get_string("share", lang),
-            callback_data=f"share_entity:{user_entity_id}:{page}:{status if status else 'all'}",
+            callback_data=f"share_entity:{user_entity_id}:{page}:{status if status else 'all'}:{query or ''}",
         ),
         InlineKeyboardButton(
             text=get_string("back", lang),
-            callback_data=f"user_list_page:{page}:{status if status else 'all'}",
+            callback_data=f"user_list_page:{page}:{status if status else 'all'}:{query or ''}",
         ),
     )
     return builder.as_markup()
 
 
-def get_rating_keyboard(user_entity_id, lang: str = "en"):
+def get_rating_keyboard(user_entity_id, page, status, query, lang: str = "en"):
     builder = InlineKeyboardBuilder()
     builder.row(
         *[
             InlineKeyboardButton(
-                text=str(i), callback_data=f"set_rating:{user_entity_id}:{i}"
+                text=str(i),
+                callback_data=f"set_rating:{user_entity_id}:{i}:{page}:{status if status else 'all'}:{query or ''}",
             )
             for i in range(1, 6)
         ]
@@ -152,59 +153,72 @@ def get_rating_keyboard(user_entity_id, lang: str = "en"):
     builder.row(
         InlineKeyboardButton(
             text=get_string("back", lang),
-            callback_data=f"back_to_entity:{user_entity_id}",
+            callback_data=f"back_to_entity:{user_entity_id}:{page}:{status if status else 'all'}:{query or ''}",
         )
     )
     return builder.as_markup()
 
 
-def get_status_keyboard(user_entity_id, lang: str = "en"):
+def get_status_keyboard(user_entity_id, page, status, query, lang: str = "en"):
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(
             text=get_string("completed", lang),
-            callback_data=f"set_status:{user_entity_id}:completed",
+            callback_data=f"set_status:{user_entity_id}:completed:{page}:{status if status else 'all'}:{query or ''}",
         ),
         InlineKeyboardButton(
             text=get_string("in_progress", lang),
-            callback_data=f"set_status:{user_entity_id}:in_progress",
+            callback_data=f"set_status:{user_entity_id}:in_progress:{page}:{status if status else 'all'}:{query or ''}",
         ),
         InlineKeyboardButton(
             text=get_string("planning", lang),
-            callback_data=f"set_status:{user_entity_id}:planning",
+            callback_data=f"set_status:{user_entity_id}:planning:{page}:{status if status else 'all'}:{query or ''}",
         ),
     )
     builder.row(
         InlineKeyboardButton(
             text=get_string("back", lang),
-            callback_data=f"back_to_entity:{user_entity_id}",
+            callback_data=f"back_to_entity:{user_entity_id}:{page}:{status if status else 'all'}:{query or ''}",
         )
     )
     return builder.as_markup()
 
 
-def get_delete_confirm_keyboard(user_entity_id, lang: str = "en"):
+def get_delete_confirm_keyboard(
+    user_entity_id,
+    lang: str = "en",
+    page: int = 1,
+    status: StatusType = None,
+    query: str = None,
+):
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(
             text=get_string("yes", lang),
-            callback_data=f"delete_confirm:{user_entity_id}:yes",
+            callback_data=f"delete_confirm:{user_entity_id}:yes:{page}:{status if status else 'all'}:{query or ''}",
         ),
         InlineKeyboardButton(
             text=get_string("no", lang),
-            callback_data=f"back_to_entity:{user_entity_id}",
+            callback_data=f"back_to_entity:{user_entity_id}:{page}:{status if status else 'all'}:{query or ''}",
         ),
     )
     return builder.as_markup()
 
 
-def get_season_number_keyboard(user_entity_id, season: int = 1, lang: str = "en"):
+def get_season_number_keyboard(
+    user_entity_id,
+    season: int = 1,
+    lang: str = "en",
+    page: int = 1,
+    status: StatusType = None,
+    query: str = None,
+):
     builder = InlineKeyboardBuilder()
     # Ряд 1: - | номер | +
     builder.row(
         InlineKeyboardButton(
             text="-",
-            callback_data=f"season_number:{user_entity_id}:{season-1 if season > 1 else 1}",
+            callback_data=f"season_number:{user_entity_id}:{season-1 if season > 1 else 1}:{page}:{status if status else 'all'}:{query or ''}",
         ),
         InlineKeyboardButton(
             text=str(season),
@@ -212,18 +226,18 @@ def get_season_number_keyboard(user_entity_id, season: int = 1, lang: str = "en"
         ),
         InlineKeyboardButton(
             text="+",
-            callback_data=f"season_number:{user_entity_id}:{season+1}",
+            callback_data=f"season_number:{user_entity_id}:{season+1}:{page}:{status if status else 'all'}:{query or ''}",
         ),
     )
     # Ряд 2: Сброс | OK
     builder.row(
         InlineKeyboardButton(
             text=get_string("clean", lang),  # Например, "Сброс"
-            callback_data=f"season_number:{user_entity_id}:clean",
+            callback_data=f"season_number:{user_entity_id}:clean:{page}:{status if status else 'all'}:{query or ''}",
         ),
         InlineKeyboardButton(
             text=get_string("confirm", lang),  # Например, "OK"
-            callback_data=f"set_season:{user_entity_id}:{season}",
+            callback_data=f"set_season:{user_entity_id}:{season}:{page}:{status if status else 'all'}:{query or ''}",
         ),
     )
     return builder.as_markup()

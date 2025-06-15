@@ -6,7 +6,7 @@ from models.enum_classes import EntityType, StatusType, LanguageType
 
 def update_timestamp(func):
     def wrapper(self, *args, **kwargs):
-        self.updated_at = datetime.now()
+        self.updated_db = datetime.now()
         return func(self, *args, **kwargs)
 
     return wrapper

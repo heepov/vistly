@@ -12,6 +12,10 @@ from aiogram import types
 from bot.utils.strings import get_string
 from database.models_db import UserDB
 import re
+from bot.features.user_list.user_list_handlers import show_user_list
+from bot.features.user_list.user_list_keyboards import get_user_list_keyboard
+from bot.shared.other_keyboards import get_menu_keyboard
+from bot.states.fsm_states import UserListStates
 
 search_common_router = Router()
 
@@ -112,5 +116,26 @@ async def handle_search_type(callback: CallbackQuery, state: FSMContext):
             await state.set_state(SearchOmdbStates.waiting_for_omdb_selection)
             await callback.answer()
     elif data.startswith("search_local:"):
-        await callback.answer(get_string("feature_developing", lang), show_alert=False)
-        return
+        query = data.split(":", 1)[1]
+        page = 1
+        user = UserDB.get_or_none(tg_id=callback.from_user.id)
+        lang = user.language if user else "en"
+        await callback.message.edit_text(get_string("searching_please_wait", lang))
+
+        success = await show_user_list(
+            callback=callback,  # передаем message как callback
+            page=1,  # начинаем с первой страницы
+            status=None,  # показываем все фильмы
+            state=state,
+            search_query=query,
+        )
+
+        if success:
+            await state.set_state(UserListStates.waiting_for_list_selection)
+        else:
+            # Если список пуст, возвращаемся в главное меню
+            await state.set_state(MainMenuStates.waiting_for_query)
+            await callback.message.answer(
+                get_string("start_message", lang),
+                reply_markup=get_menu_keyboard(lang),
+            )

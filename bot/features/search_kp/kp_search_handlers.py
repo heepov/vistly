@@ -14,7 +14,7 @@ from aiogram.fsm.context import FSMContext
 from bot.states.fsm_states import SearchKpStates, MainMenuStates, SearchStates
 from bot.formater.message_formater import format_entity_details
 from models.factories import build_entity_from_db
-from bot.utils.strings import get_string
+from bot.utils.strings import get_string, get_status_string
 
 kp_router = Router()
 
@@ -371,31 +371,22 @@ async def handle_add_to_list_status_selection(
         if not user_id:
             await callback.answer("User not found")
             return
-
-        # Определяем статус
-        status_map = {
-            "in_progress": StatusType.IN_PROGRESS,
-            "completed": StatusType.COMPLETED,
-            "planning": StatusType.PLANNING,
-        }
-        status_type = status_map.get(status, StatusType.PLANNING)
-
         try:
             # Получаем сущность
             entity = EntityDB.get_by_id(entity_id)
 
             # Создаем или обновляем запись в user_entity
             user_entity, created = UserEntityDB.get_or_create(
-                user_id=user_id, entity=entity, defaults={"status": status_type}
+                user_id=user_id, entity=entity, defaults={"status": StatusType(status)}
             )
 
             if not created:
-                user_entity.status = status_type
+                user_entity.status = StatusType(status)
                 user_entity.save()
 
             # Показываем сообщение об успехе
             success_message = get_string("entity_added_to_list", lang).format(
-                entity_title=entity.title, status_type=status_type.name
+                entity_title=entity.title, status_type=get_status_string(status, lang)
             )
             await callback.message.delete()
             await callback.message.answer(success_message)
