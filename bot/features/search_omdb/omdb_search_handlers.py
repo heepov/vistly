@@ -1,6 +1,6 @@
 from aiogram import Router, types
 from aiogram.types import CallbackQuery
-from bot.shared.other_keyboards import menu_keyboard
+from bot.shared.other_keyboards import get_menu_keyboard
 from bot.features.search_omdb.omdb_search_keyboards import (
     get_search_results_keyboard,
     get_entity_detail_keyboard,
@@ -14,6 +14,7 @@ from aiogram.fsm.context import FSMContext
 from bot.states.fsm_states import SearchOmdbStates, MainMenuStates, SearchStates
 from bot.formater.message_formater import format_entity_details
 from models.factories import build_entity_from_db
+from bot.utils.strings import get_string
 
 omdb_router = Router()
 
@@ -161,6 +162,8 @@ async def show_search_results(
     Returns:
         bool: True если результаты найдены и показаны, False если результаты не найдены
     """
+    user = UserDB.get_or_none(tg_id=callback.from_user.id)
+    lang = user.language if user else "en"
     omdb_response = await OMDbService.search_movies_series(query, page)
     results = omdb_response.get("Search", [])
 
@@ -171,27 +174,30 @@ async def show_search_results(
 
     if not results:
         await callback.message.edit_text(
-            f"Nothing was found for the query: <b>{query}</b>"
+            get_string("nothing_found_query", lang).format(query=query)
         )
         if state:
             await state.set_state(MainMenuStates.waiting_for_query)
         return False
-
     keyboard = get_search_results_keyboard(
-        results, query, page, total_results, entity_type
+        results, query, page, total_results, entity_type, lang
     )
 
     # Проверяем, есть ли фото в сообщении
     if getattr(callback.message, "photo", None):
         await callback.message.delete()
         await callback.message.answer(
-            f"Found {total_results} results for: <b>{query}</b>",
+            get_string("found_results", lang).format(
+                total_results=total_results, query=query
+            ),
             reply_markup=keyboard,
             parse_mode="HTML",
         )
     else:
         await callback.message.edit_text(
-            f"Found {total_results} results for: <b>{query}</b>",
+            get_string("found_results", lang).format(
+                total_results=total_results, query=query
+            ),
             reply_markup=keyboard,
         )
 
@@ -200,6 +206,8 @@ async def show_search_results(
 
 @omdb_router.callback_query(SearchOmdbStates.waiting_for_omdb_selection)
 async def handle_omdb_search_selection(callback: CallbackQuery, state: FSMContext):
+    user = UserDB.get_or_none(tg_id=callback.from_user.id)
+    lang = user.language if user else "en"
     data = callback.data
     if data.startswith("omdb_page:"):
         try:
@@ -232,24 +240,41 @@ async def handle_omdb_search_selection(callback: CallbackQuery, state: FSMContex
         ratings = omdb_ratings_to_db(entity, details)
         # --- Формируем сообщение ---
         entity_full = build_entity_from_db(entity)
-        message = format_entity_details(entity_full)
+        message = format_entity_details(entity_full, lang)
 
         # --- Отправляем сообщение ---
         poster = OMDbService.get_safe_value(details, "Poster")
+        already_added = False
+        if user:
+            already_added = (
+                UserEntityDB.select()
+                .where((UserEntityDB.user_id == user) & (UserEntityDB.entity == entity))
+                .exists()
+            )
         if poster and poster != "N/A":
             await callback.message.delete()
             await callback.message.answer_photo(
                 poster,
                 caption=message,
                 reply_markup=get_entity_detail_keyboard(
-                    entity.id, query, page, entity_type
+                    entity.id,
+                    query,
+                    page,
+                    entity_type,
+                    lang,
+                    already_added=already_added,
                 ),
             )
         else:
             await callback.message.edit_text(
                 message,
                 reply_markup=get_entity_detail_keyboard(
-                    entity.id, query, page, entity_type
+                    entity.id,
+                    query,
+                    page,
+                    entity_type,
+                    lang,
+                    already_added=already_added,
                 ),
             )
         await state.set_state(SearchOmdbStates.waiting_for_omdb_action_entity)
@@ -262,20 +287,22 @@ async def handle_omdb_search_selection(callback: CallbackQuery, state: FSMContex
     if data == "cancel_search":
         await callback.message.delete()
         await callback.message.answer(
-            "Hi! Enter the name of the movie or TV series to search for:",
-            reply_markup=menu_keyboard,
+            get_string("start_message", lang),
+            reply_markup=get_menu_keyboard(lang),
         )
         await state.set_state(MainMenuStates.waiting_for_query)
         await callback.answer()
         return
 
     if data == "change_entity_type":
-        await callback.answer("Feature is developing", show_alert=False)
+        await callback.answer(get_string("feature_developing", lang), show_alert=False)
         return
 
 
 @omdb_router.callback_query(SearchOmdbStates.waiting_for_omdb_action_entity)
 async def handle_omdb_entity_actions(callback: CallbackQuery, state: FSMContext):
+    user = UserDB.get_or_none(tg_id=callback.from_user.id)
+    lang = user.language if user else "en"
     data = callback.data
     if data.startswith("back_to_results:"):
         try:
@@ -319,14 +346,18 @@ async def handle_omdb_entity_actions(callback: CallbackQuery, state: FSMContext)
             # Если сообщение с фото, нужно удалить его и отправить новое
             await callback.message.delete()
             await callback.message.answer(
-                f"Select Status type for {entity_name}",
-                reply_markup=get_status_selection_keyboard(entity_id),
+                get_string("select_status_type_for", lang).format(
+                    entity_name=entity_name
+                ),
+                reply_markup=get_status_selection_keyboard(entity_id, lang),
             )
         else:
             # Если обычное текстовое сообщение, можно просто отредактировать его
             await callback.message.edit_text(
-                f"Select Status type for {entity_name}",
-                reply_markup=get_status_selection_keyboard(entity_id),
+                get_string("select_status_type_for", lang).format(
+                    entity_name=entity_name
+                ),
+                reply_markup=get_status_selection_keyboard(entity_id, lang),
             )
 
         # Переходим в состояние ожидания выбора статуса
@@ -339,14 +370,16 @@ async def handle_omdb_entity_actions(callback: CallbackQuery, state: FSMContext)
 async def handle_add_to_list_status_selection(
     callback: CallbackQuery, state: FSMContext
 ):
+    user = UserDB.get_or_none(tg_id=callback.from_user.id)
+    lang = user.language if user else "en"
     data = callback.data
 
     # Обработка отмены
     if data == "cancel_add_to_list":
         await callback.message.delete()
         await callback.message.answer(
-            "Hi! Enter the name of the movie or TV series to search for:",
-            reply_markup=menu_keyboard,
+            get_string("start_message", lang),
+            reply_markup=get_menu_keyboard(lang),
         )
         await state.set_state(MainMenuStates.waiting_for_query)
         await callback.answer()
@@ -371,8 +404,8 @@ async def handle_add_to_list_status_selection(
         # Определяем статус
         status_map = {
             "in_progress": StatusType.IN_PROGRESS,
-            "complete": StatusType.COMPLETED,
-            "planing": StatusType.PLANNING,
+            "completed": StatusType.COMPLETED,
+            "planning": StatusType.PLANNING,
         }
         status_type = status_map.get(status, StatusType.PLANNING)
 
@@ -390,7 +423,9 @@ async def handle_add_to_list_status_selection(
                 user_entity.save()
 
             # Показываем сообщение об успехе
-            success_message = f"{entity.title} has been successfully added with {status_type.name} status"
+            success_message = get_string("entity_added_to_list", lang).format(
+                entity_title=entity.title, status_type=status_type.name
+            )
             await callback.message.delete()
             await callback.message.answer(success_message)
             await state.set_state(MainMenuStates.waiting_for_query)

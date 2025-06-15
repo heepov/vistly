@@ -1,18 +1,19 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from bot.utils.strings import get_string
 
-menu_keyboard = ReplyKeyboardMarkup(
-    keyboard=[
-        [
-            KeyboardButton(text="Profile"),
-            KeyboardButton(text="Restart"),
-            KeyboardButton(text="List"),
+def get_menu_keyboard(lang="en"):
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text=get_string("profile", lang)),
+                KeyboardButton(text=get_string("restart", lang)),
+                KeyboardButton(text=get_string("list", lang)),
+            ],
         ],
-    ],
-    resize_keyboard=True,
-)
-
+        resize_keyboard=True,
+    )
 
 def get_language_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
@@ -23,10 +24,10 @@ def get_language_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def get_choose_type_search_keyboard(query: str) -> InlineKeyboardMarkup:
+def get_choose_type_search_keyboard(query: str, lang="en") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="Global", callback_data=f"search_global:{query}"),
-        InlineKeyboardButton(text="Local", callback_data=f"search_local:{query}"),
+        InlineKeyboardButton(text=get_string("global", lang), callback_data=f"search_global:{query}"),
+        InlineKeyboardButton(text=get_string("local", lang), callback_data=f"search_local:{query}"),
     )
     return builder.as_markup()
