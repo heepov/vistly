@@ -59,6 +59,7 @@ STRINGS = {
         "user_list_title": "You have <b>{total_results}</b> with <b>{status_text}</b> items:",
         "confirm": "Confirm",
         "already_added": "Already added",
+        "unknown_command": "Unknown command. Use /help for help.",
     },
     "ru": {
         "lang_choose": "Выберите язык / Choose language:",
@@ -120,6 +121,7 @@ STRINGS = {
         "user_list_title": "У вас <b>{total_results}</b> объектов со статусом <b>{status_text}</b>:",
         "confirm": "Подтвердить",
         "already_added": "Уже добавлено",
+        "unknown_command": "Неизвестная команда. Используйте /help для получения помощи.",
     },
 }
 

@@ -1,4 +1,4 @@
-from aiogram import Router, types
+from aiogram import Router
 from aiogram.types import CallbackQuery
 from bot.shared.other_keyboards import get_menu_keyboard
 from bot.features.search_omdb.omdb_search_keyboards import (
@@ -9,9 +9,9 @@ from bot.features.search_kp.kp_search_keyboards import get_search_results_keyboa
 from bot.features.search_kp.kp_service import KpService
 from database.models_db import EntityDB, RatingDB, UserEntityDB, UserDB
 from models.enum_classes import EntityType, StatusType
-from datetime import datetime, date
+from datetime import datetime
 from aiogram.fsm.context import FSMContext
-from bot.states.fsm_states import SearchKpStates, MainMenuStates, SearchStates
+from bot.states.fsm_states import SearchKpStates, MainMenuStates
 from bot.formater.message_formater import format_entity_details
 from models.factories import build_entity_from_db
 from bot.utils.strings import get_string, get_status_string

@@ -1,5 +1,5 @@
 import aiohttp
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from config.config import load_config
 
 config = load_config()

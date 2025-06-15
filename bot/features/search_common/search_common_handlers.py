@@ -13,7 +13,6 @@ from bot.utils.strings import get_string
 from database.models_db import UserDB
 import re
 from bot.features.user_list.user_list_handlers import show_user_list
-from bot.features.user_list.user_list_keyboards import get_user_list_keyboard
 from bot.shared.other_keyboards import get_menu_keyboard
 from bot.states.fsm_states import UserListStates
 

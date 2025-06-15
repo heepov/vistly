@@ -1,7 +1,7 @@
 from typing import List
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from database.models_db import UserEntityDB, EntityDB
+from database.models_db import UserEntityDB
 from models.enum_classes import StatusType, EntityType
 from bot.utils.strings import get_string, get_status_string
 
