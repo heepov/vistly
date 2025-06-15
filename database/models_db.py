@@ -33,7 +33,8 @@ class UserDB(BaseModel):
 
 class EntityDB(BaseModel):
     id = AutoField()
-    src_id = CharField(unique=True, null=True)
+    src_id = CharField(null=True)
+    kp_id = CharField(null=True)
     title = CharField()
     type = CharField(
         choices=[(tag.value, tag.value) for tag in EntityType],

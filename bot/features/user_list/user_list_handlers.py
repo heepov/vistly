@@ -438,7 +438,8 @@ async def confirm_delete(callback: CallbackQuery, state: FSMContext):
     lang = user.language if user else "en"
     data = await state.get_data()
     page = int(data.get("page", 1))
-    status = data.get("status", None)
+    status_str = data.get("status", None)
+    status = StatusType(status_str) if status_str and status_str != "all" else None
     if callback.data.startswith("delete_confirm:"):
         _, user_entity_id, answer = callback.data.split(":")
         if answer == "yes":

@@ -23,11 +23,16 @@ class OmdbConfig:
 
 
 @dataclass
+class KpConfig:
+    api_key: str
+
+
+@dataclass
 class Config:
     tg_bot: TgBot
     db: DbConfig
     omdb: OmdbConfig
-
+    kp: KpConfig
 
 def load_config(path: str = None) -> Config:
     env = Env()
@@ -45,4 +50,5 @@ def load_config(path: str = None) -> Config:
             port=env.int("DB_PORT", 5432),
         ),
         omdb=OmdbConfig(api_key=env.str("OMDB_API_KEY")),
+        kp=KpConfig(api_key=env.str("KP_API_KEY")),
     )

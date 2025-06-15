@@ -7,16 +7,20 @@ from bot.states.fsm_states import MainMenuStates
 from database.models_db import UserDB
 from bot.features.search_common.search_common_handlers import search_common_router
 from bot.features.search_omdb.omdb_search_handlers import omdb_router
+from bot.features.search_kp.kp_search_handlers import kp_router
 from bot.features.user_list.user_list_handlers import user_list_router
 from bot.utils.strings import get_string
 
 router = Router()
-router.include_router(omdb_router)
-router.include_router(user_list_router)
 router.include_router(search_common_router)
+router.include_router(omdb_router)
+router.include_router(kp_router)
+router.include_router(user_list_router)
 
 
-MENU_STRINGS = [get_string(key) for key in ["restart", "list", "profile"]]
+MENU_STRINGS = [get_string(key, "en") for key in ["restart", "list", "profile"]]
+MENU_COMMANDS = ["restart", "list", "profile"]
+
 RESTART_COMMANDS = [
     get_string("restart", "en"),
     get_string("restart", "ru"),
@@ -70,9 +74,7 @@ async def cmd_help(message: types.Message):
     )
 
 
-@router.message(
-    lambda m: m.text and m.text.startswith("/") and m.text[1:] not in MENU_STRINGS
-)
+@router.message(lambda m: m.text.startswith("/") and m.text[1:] not in MENU_COMMANDS)
 async def handle_all_commands(message: types.Message):
     command = message.text[1:].split()[0]
     await message.answer(f"Получена команда: {command}")
