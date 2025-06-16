@@ -42,7 +42,6 @@ async def handle_profile_actions(callback: CallbackQuery, state: FSMContext):
         user.language = new_lang
         user.save()
         await state.update_data(lang=new_lang)
-        logger.info(f"old_lang: {lang}, new_lang: {new_lang}")
         await callback.message.edit_text(
             text=get_string("profile_message", new_lang).format(
                 user_name=user.name,

@@ -470,7 +470,10 @@ async def handle_ls_entity_delete(callback: CallbackQuery, state: FSMContext):
 
             await callback.message.delete()
             await callback.message.answer(
-                f"{get_string('entity_deleted', lang)}\n{get_string('start_message', lang)}",
+                get_string("entity_deleted", lang),
+            )
+            await callback.message.answer(
+                get_string("start_message", lang),
                 reply_markup=get_menu_keyboard(lang),
             )
             await state.clear()

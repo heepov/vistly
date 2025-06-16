@@ -80,6 +80,7 @@ def omdb_details_to_db(details: dict) -> tuple[EntityDB, bool]:
 
     entity, created = EntityDB.get_or_create(
         src_id=details.get("imdbID"),
+        kp_id=None,
         defaults={
             "title": details.get("Title") or "No title",
             "type": details.get("Type") or EntityType.UNDEFINED,

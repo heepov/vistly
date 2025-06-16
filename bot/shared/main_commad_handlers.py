@@ -57,7 +57,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
         await state.update_data(lang=lang)
         if args:
             success = await show_dl_entity(
-                callback=message,
+                msg=message,
                 state=state,
                 entity_id=entity_id,
             )
@@ -91,8 +91,9 @@ async def handle_language_selection(callback: types.CallbackQuery, state: FSMCon
     entity_id = state_data.get("entity_id")
 
     if entity_id:
+        # Передаём callback.message (само сообщение с языком) в show_dl_entity
         success = await show_dl_entity(
-            callback=callback,
+            msg=callback.message,  # <--- передаём именно message!
             state=state,
             entity_id=entity_id,
         )
@@ -104,15 +105,14 @@ async def handle_language_selection(callback: types.CallbackQuery, state: FSMCon
             await callback.message.edit_text(
                 get_string("start_message", lang), reply_markup=get_menu_keyboard(lang)
             )
+            await state.set_state(MainMenuStates.waiting_for_query)
+        await callback.answer()
+    else:
+        await callback.message.edit_text(
+            get_string("start_message", lang), reply_markup=get_menu_keyboard(lang)
+        )
         await state.set_state(MainMenuStates.waiting_for_query)
         await callback.answer()
-
-    await callback.message.edit_text(
-        get_string("start_message", lang), reply_markup=get_menu_keyboard(lang)
-    )
-    await state.set_state(MainMenuStates.waiting_for_query)
-    await callback.answer()
-
 
 @router.message(lambda m: m.text in get_restart_commands())
 async def handle_cancel(message: types.Message, state: FSMContext):
