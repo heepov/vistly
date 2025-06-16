@@ -1,31 +1,78 @@
+import logging
+
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from typing import List, Dict
 from bot.utils.strings import get_string
+from models.enum_classes import EntityType, SourceApi, StatusType
+
+logger = logging.getLogger(__name__)
 
 
-def get_search_results_keyboard(
+def get_gs_kp_list_keyboard(
     results: List[Dict],
-    query: str,
     page: int,
-    total_results: int,
-    entity_type: str = "movie",
     lang: str = "en",
-) -> InlineKeyboardMarkup:
+) -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
-    # Кнопки с результатами (до 10)
     for item in results:
-        title = item.get("Title", "No title")
-        year = item.get("Year", "?")
-        type_ = item.get("Type", "?")
-        imdb_id = item.get("imdbID", "?")
-        btn_text = f"{title} ({year}) - {get_string(type_.lower(), lang)}"
+        title = item.get("name", "No title")
+        year = item.get("year", "?")
+        type = "series" if item.get("isSeries", False) else "movie"
+        kp_id = item.get("id", "?")
+        btn_text = f"{title} ({year}) - {get_string(type.lower(), lang)}"
         builder.row(
             InlineKeyboardButton(
                 text=btn_text,
-                callback_data=f"omdb_select:{imdb_id}:{query}:{page}:{entity_type}",
+                callback_data=f"gs_select:{page}:{kp_id}",
             )
         )
+    return builder
+
+
+def get_gs_omdb_list_keyboard(
+    results: List[Dict],
+    page: int,
+    lang: str = "en",
+) -> InlineKeyboardBuilder:
+    builder = InlineKeyboardBuilder()
+    for item in results:
+        title = item.get("Title", "No title")
+        year = item.get("Year", "?")
+        type = item.get("Type", "?")
+        imdb_id = item.get("imdbID", "?")
+        btn_text = f"{title} ({year}) - {get_string(type.lower(), lang)}"
+        builder.row(
+            InlineKeyboardButton(
+                text=btn_text,
+                callback_data=f"gs_select:{page}:{imdb_id}",
+            )
+        )
+    return builder
+
+
+def get_gs_results_keyboard(
+    results: List[Dict],
+    source_api: SourceApi,
+    page: int,
+    total_results: int,
+    lang: str = "en",
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    # Кнопки с результатами
+    if source_api == SourceApi.KP:
+        builder = get_gs_kp_list_keyboard(
+            results=results,
+            page=page,
+            lang=lang,
+        )
+    elif source_api == SourceApi.OMDB:
+        builder = get_gs_omdb_list_keyboard(
+            results=results,
+            page=page,
+            lang=lang,
+        )
+
     # Пагинация
     total_pages = (total_results + 9) // 10
     pagination_row = []
@@ -33,7 +80,7 @@ def get_search_results_keyboard(
         pagination_row.append(
             InlineKeyboardButton(
                 text="◀️",
-                callback_data=f"omdb_page:{query}:{page-1}:{entity_type}",
+                callback_data=f"gs_page:{page-1}",
             )
         )
     pagination_row.append(
@@ -47,7 +94,8 @@ def get_search_results_keyboard(
     if page < total_pages:
         pagination_row.append(
             InlineKeyboardButton(
-                text="▶️", callback_data=f"omdb_page:{query}:{page+1}:{entity_type}"
+                text="▶️",
+                callback_data=f"gs_page:{page+1}",
             )
         )
     builder.row(*pagination_row)
@@ -55,20 +103,18 @@ def get_search_results_keyboard(
     builder.row(
         InlineKeyboardButton(
             text=get_string("change_entity_type", lang),
-            callback_data="change_entity_type",
+            callback_data=f"gs_filter:{page}",
         ),
         InlineKeyboardButton(
-            text=get_string("cancel", lang), callback_data="cancel_search"
+            text=get_string("cancel", lang), callback_data="gs_cancel"
         ),
     )
     return builder.as_markup()
 
 
-def get_entity_detail_keyboard(
+def get_gs_entity_detail_keyboard(
     entity_id: int,
-    query: str,
     page: int,
-    entity_type: str = "movie",
     lang: str = "en",
     already_added: bool = False,
 ) -> InlineKeyboardMarkup:
@@ -81,25 +127,28 @@ def get_entity_detail_keyboard(
             ),
             InlineKeyboardButton(
                 text=get_string("back", lang),
-                callback_data=f"back_to_results:{query}:{page}:{entity_type}",
+                callback_data=f"gs_back:{page}",
             ),
         )
     else:
+
         builder.row(
             InlineKeyboardButton(
                 text=get_string("add_to_list", lang),
-                callback_data=f"add_to_list:{entity_id}",
+                callback_data=f"gs_add:{page}:{entity_id}",
             ),
             InlineKeyboardButton(
                 text=get_string("back", lang),
-                callback_data=f"back_to_results:{query}:{page}:{entity_type}",
+                callback_data=f"gs_back:{page}",
             ),
         )
     return builder.as_markup()
 
 
-def get_status_selection_keyboard(
-    entity_id: int, lang: str = "en"
+def get_gs_add_to_list_keyboard(
+    entity_id: int,
+    page: int,
+    lang: str = "en",
 ) -> InlineKeyboardMarkup:
     """Создает клавиатуру для выбора статуса добавления в список"""
     builder = InlineKeyboardBuilder()
@@ -108,11 +157,11 @@ def get_status_selection_keyboard(
     builder.row(
         InlineKeyboardButton(
             text=get_string("in_progress", lang),
-            callback_data=f"add_status:{entity_id}:in_progress",
+            callback_data=f"gs_add_select:{page}:{entity_id}:{StatusType.IN_PROGRESS.value}",
         ),
         InlineKeyboardButton(
             text=get_string("completed", lang),
-            callback_data=f"add_status:{entity_id}:completed",
+            callback_data=f"gs_add_select:{page}:{entity_id}:{StatusType.COMPLETED.value}",
         ),
     )
 
@@ -120,10 +169,11 @@ def get_status_selection_keyboard(
     builder.row(
         InlineKeyboardButton(
             text=get_string("planning", lang),
-            callback_data=f"add_status:{entity_id}:planning",
+            callback_data=f"gs_add_select:{page}:{entity_id}:{StatusType.PLANNING.value}",
         ),
         InlineKeyboardButton(
-            text=get_string("cancel", lang), callback_data="cancel_add_to_list"
+            text=get_string("back", lang),
+            callback_data=f"gs_back:{page}:{entity_id}",
         ),
     )
 

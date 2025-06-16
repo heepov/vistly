@@ -61,6 +61,8 @@ STRINGS = {
         "already_added": "Already added",
         "unknown_command": "Unknown command. Use /help for help.",
         "min": "min",
+        "error_getting_results": "Error getting results",
+        "error_getting_entity": "Error getting entity",
     },
     "ru": {
         "lang_choose": "Выберите язык / Choose language:",
@@ -124,6 +126,8 @@ STRINGS = {
         "already_added": "Уже добавлено",
         "unknown_command": "Неизвестная команда. Используйте /help для получения помощи.",
         "min": "мин",
+        "error_getting_results": "Ошибка получения результатов",
+        "error_getting_entity": "Ошибка получения объекта",
     },
 }
 
@@ -147,3 +151,33 @@ def get_string(key, lang="en") -> str:
 
 def get_status_string(status: str, lang: str = "en") -> str:
     return STATUS_STRINGS.get(lang, STATUS_STRINGS["en"]).get(status, status)
+
+
+def get_all_commands() -> list[str]:
+    commands = [get_string(key, "en") for key in ["restart", "list", "profile"]]
+    commands.extend([get_string(key, "ru") for key in ["restart", "list", "profile"]])
+    commands.append("/restart")
+    commands.append("/list")
+    commands.append("/profile")
+    return commands
+
+
+def get_restart_commands() -> list[str]:
+    commands = [get_string(key, "en") for key in ["restart"]]
+    commands.extend([get_string(key, "ru") for key in ["restart"]])
+    commands.append("/restart")
+    return commands
+
+
+def get_list_commands() -> list[str]:
+    commands = [get_string(key, "en") for key in ["list"]]
+    commands.extend([get_string(key, "ru") for key in ["list"]])
+    commands.append("/list")
+    return commands
+
+
+def get_profile_commands() -> list[str]:
+    commands = [get_string(key, "en") for key in ["profile"]]
+    commands.extend([get_string(key, "ru") for key in ["profile"]])
+    commands.append("/profile")
+    return commands

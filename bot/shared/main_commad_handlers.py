@@ -5,28 +5,25 @@ from bot.shared.user_service import get_or_create_user
 from aiogram.fsm.context import FSMContext
 from bot.states.fsm_states import MainMenuStates
 from database.models_db import UserDB
-from bot.features.search_common.search_common_handlers import search_common_router
-from bot.features.search_omdb.omdb_search_handlers import omdb_router
-from bot.features.search_kp.kp_search_handlers import kp_router
 from bot.features.user_list.user_list_handlers import user_list_router
 from bot.features.profile.user_profile_handlers import profile_router
-from bot.utils.strings import get_string
+from bot.utils.strings import (
+    get_string,
+    get_restart_commands,
+    get_list_commands,
+    get_all_commands,
+)
+from bot.features.search.search_handlers import search_router
+from bot.features.search.search_gs_handlers import gs_router
+from bot.features.user_list.user_list_handlers import show_ls_list
+from models.enum_classes import EntityType, StatusType
+from bot.states.fsm_states import UserListStates
 
 router = Router()
-router.include_router(search_common_router)
-router.include_router(omdb_router)
-router.include_router(kp_router)
+router.include_router(search_router)
+router.include_router(gs_router)
 router.include_router(user_list_router)
 router.include_router(profile_router)
-
-MENU_STRINGS = [get_string(key, "en") for key in ["restart", "list", "profile"]]
-MENU_COMMANDS = ["restart", "list", "profile"]
-
-RESTART_COMMANDS = [
-    get_string("restart", "en"),
-    get_string("restart", "ru"),
-    "/restart",
-]
 
 
 @router.message(Command("start"))
@@ -61,7 +58,7 @@ async def handle_language_selection(callback: types.CallbackQuery, state: FSMCon
     await callback.answer()
 
 
-@router.message(lambda m: m.text in RESTART_COMMANDS)
+@router.message(lambda m: m.text in get_restart_commands())
 async def handle_cancel(message: types.Message, state: FSMContext):
     await cmd_start(message, state)
 
@@ -75,7 +72,38 @@ async def cmd_help(message: types.Message):
     )
 
 
-@router.message(lambda m: m.text.startswith("/") and m.text[1:] not in MENU_COMMANDS)
+@user_list_router.message(lambda m: m.text in get_list_commands())
+async def handle_list(message: types.Message, state: FSMContext):
+    user = UserDB.get_or_none(tg_id=message.from_user.id)
+    lang = user.language if user else "en"
+    await state.clear()
+    await state.update_data(
+        query=None,
+        entity_type_search=EntityType.ALL,
+        lang=lang,
+        status_type=StatusType.ALL,
+    )
+
+    success = await show_ls_list(
+        callback=message,
+        page=1,
+        state=state,
+    )
+
+    if success:
+        await state.set_state(UserListStates.waiting_for_ls_select_entity)
+    else:
+        await state.clear()
+        await state.set_state(MainMenuStates.waiting_for_query)
+        await message.answer(
+            get_string("start_message", lang),
+            reply_markup=get_menu_keyboard(lang),
+        )
+
+
+@router.message(
+    lambda m: m.text.startswith("/") and m.text[1:] not in get_all_commands()
+)
 async def handle_all_commands(message: types.Message):
     user = UserDB.get_or_none(tg_id=message.from_user.id)
     lang = user.language if user else "en"

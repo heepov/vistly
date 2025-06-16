@@ -12,15 +12,15 @@ class KpService:
     BASE_URL = "https://api.kinopoisk.dev/v1.4/"
 
     @staticmethod
-    def get_safe_value(details: dict, key: str) -> Any:
+    def get_safe_value(details: dict, key: str, default=None) -> Any:
         keys = key.split(".")
         value = details
         for k in keys:
             if isinstance(value, dict) and k in value:
                 value = value[k]
             else:
-                return None
-        return value if value not in (None, "N/A") else None
+                return default
+        return value if value not in (None, "N/A") else default
 
     @classmethod
     async def search_movies_series(cls, query: str, page: int = 1) -> Dict[str, Any]:

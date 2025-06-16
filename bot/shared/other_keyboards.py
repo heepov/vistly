@@ -3,6 +3,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from bot.utils.strings import get_string
 
+
 def get_menu_keyboard(lang="en"):
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -15,6 +16,7 @@ def get_menu_keyboard(lang="en"):
         resize_keyboard=True,
     )
 
+
 def get_language_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
@@ -24,10 +26,14 @@ def get_language_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def get_choose_type_search_keyboard(query: str, lang="en") -> InlineKeyboardMarkup:
+def get_choose_type_search_keyboard(lang="en") -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text=get_string("global", lang), callback_data=f"search_global:{query}"),
-        InlineKeyboardButton(text=get_string("local", lang), callback_data=f"search_local:{query}"),
+        InlineKeyboardButton(
+            text=get_string("global", lang), callback_data=f"search_global"
+        ),
+        InlineKeyboardButton(
+            text=get_string("local", lang), callback_data=f"search_local"
+        ),
     )
     return builder.as_markup()

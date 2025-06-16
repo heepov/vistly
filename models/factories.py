@@ -1,5 +1,8 @@
 from models.models import Entity, Rating
 from database.models_db import EntityDB
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def build_entity_from_db(entity_db: EntityDB) -> Entity:
@@ -19,6 +22,7 @@ def build_entity_from_db(entity_db: EntityDB) -> Entity:
         added_db=entity_db.added_db,
         updated_db=entity_db.updated_db,
         src_id=entity_db.src_id,
+        kp_id=entity_db.kp_id,
         type=entity_db.type,
         description=entity_db.description,
         poster_url=entity_db.poster_url,

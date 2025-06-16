@@ -30,6 +30,7 @@ class Entity:
     added_db: datetime
     updated_db: datetime
     src_id: Optional[str] = None
+    kp_id: Optional[str] = None
     type: Optional[EntityType] = None
     description: Optional[str] = None
     poster_url: Optional[str] = None
