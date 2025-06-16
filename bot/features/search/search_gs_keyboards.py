@@ -5,6 +5,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from typing import List, Dict
 from bot.utils.strings import get_string
 from models.enum_classes import EntityType, SourceApi, StatusType
+from config.config import BOT_USERNAME
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +132,6 @@ def get_gs_entity_detail_keyboard(
             ),
         )
     else:
-
         builder.row(
             InlineKeyboardButton(
                 text=get_string("add_to_list", lang),

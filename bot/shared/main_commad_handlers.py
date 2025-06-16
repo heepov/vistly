@@ -3,10 +3,13 @@ from aiogram.filters import Command
 from bot.shared.other_keyboards import get_menu_keyboard, get_language_keyboard
 from bot.shared.user_service import get_or_create_user
 from aiogram.fsm.context import FSMContext
-from bot.states.fsm_states import MainMenuStates
+from bot.states.fsm_states import (
+    MainMenuStates,
+    UserListStates,
+    SearchStates,
+    DeepLinkStates,
+)
 from database.models_db import UserDB
-from bot.features.user_list.user_list_handlers import user_list_router
-from bot.features.profile.user_profile_handlers import profile_router
 from bot.utils.strings import (
     get_string,
     get_restart_commands,
@@ -15,22 +18,33 @@ from bot.utils.strings import (
 )
 from bot.features.search.search_handlers import search_router
 from bot.features.search.search_gs_handlers import gs_router
-from bot.features.user_list.user_list_handlers import show_ls_list
+from bot.features.user_list.user_list_handlers import user_list_router, show_ls_list
+from bot.features.profile.user_profile_handlers import profile_router
 from models.enum_classes import EntityType, StatusType
-from bot.states.fsm_states import UserListStates
+from bot.features.deep_link.deep_link_handler import show_dl_entity, dl_router
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = Router()
 router.include_router(search_router)
 router.include_router(gs_router)
 router.include_router(user_list_router)
 router.include_router(profile_router)
+router.include_router(dl_router)
 
 
 @router.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
+    await state.clear()
+    parts = message.text.split(maxsplit=1)
+    args = parts[1] if len(parts) > 1 else None
+    if args:
+        link_type, entity_id = args.split("_", 1)
+        await state.update_data(link_type=link_type, entity_id=entity_id)
+
     # Проверяем, существует ли пользователь
     user = UserDB.get_or_none(tg_id=message.from_user.id)
-    lang = user.language if user else "en"
 
     if not user:
         # Если пользователь новый, показываем выбор языка
@@ -39,12 +53,31 @@ async def cmd_start(message: types.Message, state: FSMContext):
             get_string("lang_choose"), reply_markup=get_language_keyboard()
         )
     else:
-        # Если пользователь уже существует, переходим к обычному старту
-        await state.set_state(MainMenuStates.waiting_for_query)
-        await message.answer(
-            get_string("start_message", lang),
-            reply_markup=get_menu_keyboard(lang),
-        )
+        lang = user.language if user else "en"
+        await state.update_data(lang=lang)
+        if args:
+            success = await show_dl_entity(
+                callback=message,
+                state=state,
+                entity_id=entity_id,
+            )
+
+            if success:
+                await state.set_state(DeepLinkStates.waiting_for_dl_action_entity)
+            else:
+                await state.clear()
+                await message.answer(
+                    get_string("start_message", lang),
+                    reply_markup=get_menu_keyboard(lang),
+                )
+                await state.set_state(MainMenuStates.waiting_for_query)
+        else:
+            # Если пользователь уже существует, переходим к обычному старту
+            await state.set_state(MainMenuStates.waiting_for_query)
+            await message.answer(
+                get_string("start_message", lang),
+                reply_markup=get_menu_keyboard(lang),
+            )
 
 
 @router.callback_query(MainMenuStates.waiting_for_language)
@@ -52,8 +85,31 @@ async def handle_language_selection(callback: types.CallbackQuery, state: FSMCon
     # Получаем выбранный язык из callback_data
     lang = callback.data.split(":")[1]
     user, created = get_or_create_user(callback.from_user, lang)
+    await state.update_data(lang=lang)
+    state_data = await state.get_data()
+    link_type = state_data.get("link_type")
+    entity_id = state_data.get("entity_id")
 
-    await callback.message.edit_text(get_string("start_message", lang))
+    if entity_id:
+        success = await show_dl_entity(
+            callback=callback,
+            state=state,
+            entity_id=entity_id,
+        )
+
+        if success:
+            await state.set_state(DeepLinkStates.waiting_for_dl_action_entity)
+        else:
+            await state.clear()
+            await callback.message.edit_text(
+                get_string("start_message", lang), reply_markup=get_menu_keyboard(lang)
+            )
+        await state.set_state(MainMenuStates.waiting_for_query)
+        await callback.answer()
+
+    await callback.message.edit_text(
+        get_string("start_message", lang), reply_markup=get_menu_keyboard(lang)
+    )
     await state.set_state(MainMenuStates.waiting_for_query)
     await callback.answer()
 
@@ -72,7 +128,7 @@ async def cmd_help(message: types.Message):
     )
 
 
-@user_list_router.message(lambda m: m.text in get_list_commands())
+@router.message(lambda m: m.text in get_list_commands())
 async def handle_list(message: types.Message, state: FSMContext):
     user = UserDB.get_or_none(tg_id=message.from_user.id)
     lang = user.language if user else "en"
@@ -101,9 +157,7 @@ async def handle_list(message: types.Message, state: FSMContext):
         )
 
 
-@router.message(
-    lambda m: m.text.startswith("/") and m.text[1:] not in get_all_commands()
-)
+@router.message(lambda m: m.text.startswith("/") and m.text not in get_all_commands())
 async def handle_all_commands(message: types.Message):
     user = UserDB.get_or_none(tg_id=message.from_user.id)
     lang = user.language if user else "en"

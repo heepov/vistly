@@ -26,9 +26,16 @@ def is_cyrillic(text):
 @search_router.callback_query(MainMenuStates.waiting_for_query)
 @search_router.message(lambda m: m.text not in get_all_commands())
 async def handle_text(message: types.Message, state: FSMContext):
-    logger.info(f"handle_text: {message.text}")
+    current_state = await state.get_state()
     user = UserDB.get_or_none(tg_id=message.from_user.id)
     lang = user.language if user else "en"
+    logger.info(f"current_state: {current_state}")
+    if current_state != MainMenuStates.waiting_for_query.state:
+        await message.answer(
+            get_string("error_message", lang),
+            reply_markup=get_menu_keyboard(lang),
+        )
+        return
     await state.clear()
     await state.set_state(SearchStates.waiting_for_search_type)
     await state.update_data(

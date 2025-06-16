@@ -60,9 +60,13 @@ STRINGS = {
         "confirm": "Confirm",
         "already_added": "Already added",
         "unknown_command": "Unknown command. Use /help for help.",
+        "error_message": "Error message. Use /restart to restart the bot",
         "min": "min",
         "error_getting_results": "Error getting results",
         "error_getting_entity": "Error getting entity",
+        "change_language": "🇷🇺 Русский",
+        "share_list": "Share list",
+        "profile_message": "Hi <b>{user_name}</b>!\nYou have already added <b>{entities_count}</b> movies and series.\n\nHere you can also change the bot language and share all saved movies and series with others.",
     },
     "ru": {
         "lang_choose": "Выберите язык / Choose language:",
@@ -71,7 +75,7 @@ STRINGS = {
         "profile": "Профиль",
         "restart": "Сброс",
         "list": "Мой список",
-        "global": "Глобальный поиск",
+        "global": "Глобальный",
         "local": "В моем списке",
         "search_choose_question": "Выберите тип поиска:",
         "message_error": "Неверный ввод. Используйте /restart для перезапуска бота",
@@ -128,6 +132,10 @@ STRINGS = {
         "min": "мин",
         "error_getting_results": "Ошибка получения результатов",
         "error_getting_entity": "Ошибка получения объекта",
+        "error_message": "Ошибка ввода. Используйте /restart для перезапуска бота",
+        "change_language": "🇬🇧 English",
+        "share_list": "Поделиться списком",
+        "profile_message": "Привет <b>{user_name}</b>!\nВы уже добавили <b>{entities_count}</b> фильмов и сериалов.\n\nТак же тут вы можете сменить язык бота и поделиться всеми сохраненными фильмами и сериалами с другими.",
     },
 }
 
@@ -136,11 +144,13 @@ STATUS_STRINGS = {
         "in_progress": "In progress",
         "completed": "Completed",
         "planning": "Planning",
+        "all": "All",
     },
     "ru": {
         "in_progress": "Смотрю",
         "completed": "Посмотрел",
         "planning": "Хочу",
+        "all": "Все",
     },
 }
 

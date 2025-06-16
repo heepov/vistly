@@ -1,5 +1,6 @@
 from models.models import Entity
 from bot.utils.strings import get_string
+from config.config import BOT_USERNAME
 
 MAX_MESSAGE_LENGTH = 900
 
@@ -61,19 +62,24 @@ def format_entity_details(entity: Entity, lang: str = "en") -> str:
     quote_block = (
         "<blockquote>" + "\n".join(quote_lines) + "</blockquote>" if quote_lines else ""
     )
-    message_length = MAX_MESSAGE_LENGTH - len(f"{header}\n\n{quote_block}\n\n")
 
-    # Описание
+    share_link = f"https://t.me/{BOT_USERNAME}?start=entity_{entity.id}"
+    text_link = f'<a href="{share_link}">Посмотреть в боте</a>'
+
+    message_length = MAX_MESSAGE_LENGTH - len(
+        f"{header}\n\n{quote_block}\n\n{text_link}"
+    )
+
     description = entity.description if entity.description else ""
     if len(description) > message_length:
         description = description[: message_length - 3] + "..."
 
     # Собираем всё вместе (без лишних переносов)
     if quote_block and description:
-        return f"{header}\n\n{quote_block}\n\n{description}"
+        return f"{header}\n\n{quote_block}\n\n{description}\n\n{text_link}"
     elif quote_block:
-        return f"{header}\n\n{quote_block}"
+        return f"{header}\n\n{quote_block}\n\n{text_link}"
     elif description:
-        return f"{header}\n\n{description}"
+        return f"{header}\n\n{description}\n\n{text_link}"
     else:
         return header

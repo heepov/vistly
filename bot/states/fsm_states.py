@@ -20,3 +20,11 @@ class UserListStates(StatesGroup):
     waiting_for_ls_entity_change_rating = State()
     waiting_for_ls_entity_change_season = State()
     waiting_for_ls_entity_delete_entity = State()
+
+
+class DeepLinkStates(StatesGroup):
+    waiting_for_dl_action_entity = State()
+    waiting_for_dl_add_to_list = State()
+
+class ProfileStates(StatesGroup):
+    waiting_for_profile_action = State()

@@ -79,7 +79,7 @@ def get_ls_results_keyboard(
     return builder.as_markup()
 
 
-def get_entity_detail_keyboard(user_entity, page, lang: str = "en"):
+def get_ls_detail_keyboard(user_entity, page, lang: str = "en"):
     user_entity_id = user_entity.id
     entity_type = user_entity.entity.type
     rating = user_entity.user_rating
@@ -123,10 +123,10 @@ def get_entity_detail_keyboard(user_entity, page, lang: str = "en"):
             text=get_string("delete", lang),
             callback_data=f"ls_select_delete:{page}:{user_entity_id}",
         ),
-        InlineKeyboardButton(
-            text=get_string("share", lang),
-            callback_data=f"ls_select_share:{page}:{user_entity_id}",
-        ),
+        # InlineKeyboardButton(
+        #     text=get_string("share", lang),
+        #     callback_data=f"ls_select_share:{page}:{user_entity_id}",
+        # ),
         InlineKeyboardButton(
             text=get_string("back", lang),
             callback_data=f"ls_back:{page}",

@@ -1,8 +1,9 @@
+import logging
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 from bot.features.user_list.user_list_keyboards import (
     get_ls_results_keyboard,
-    get_entity_detail_keyboard,
+    get_ls_detail_keyboard,
     get_rating_keyboard,
     get_status_keyboard,
     get_delete_confirm_keyboard,
@@ -19,6 +20,9 @@ from models.factories import build_entity_from_db
 from bot.utils.strings import get_string, get_status_string
 from peewee import fn
 from aiogram.exceptions import TelegramBadRequest
+from config.config import BOT_USERNAME
+
+logger = logging.getLogger(__name__)
 
 user_list_router = Router()
 
@@ -125,7 +129,7 @@ async def show_ls_entity(
     entity = user_entity.entity
     entity_full = build_entity_from_db(entity)
     text = format_entity_details(entity_full, lang)
-    keyboard = get_entity_detail_keyboard(
+    keyboard = get_ls_detail_keyboard(
         user_entity=user_entity,
         page=page,
         lang=lang,
@@ -283,9 +287,6 @@ async def handle_ls_action_entity(callback: CallbackQuery, state: FSMContext):
             entity_type=get_string(entity.type, lang), entity_name=entity.title
         )
         keyboard = get_delete_confirm_keyboard(user_entity_id, lang, page)
-    elif data.startswith("ls_select_share:"):
-        await callback.answer(get_string("feature_developing", lang), show_alert=False)
-        return
     elif data.startswith("ls_back:"):
         try:
             _, page = callback.data.split(":", 2)

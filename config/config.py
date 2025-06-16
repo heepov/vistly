@@ -1,6 +1,8 @@
 from environs import Env
 from dataclasses import dataclass
 
+BOT_USERNAME = "vistly_bot"
+
 
 @dataclass
 class DbConfig:
@@ -33,6 +35,7 @@ class Config:
     db: DbConfig
     omdb: OmdbConfig
     kp: KpConfig
+
 
 def load_config(path: str = None) -> Config:
     env = Env()
