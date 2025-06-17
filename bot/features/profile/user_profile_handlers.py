@@ -8,14 +8,18 @@ from bot.features.profile.user_profile_keyboards import get_profile_keyboard
 from bot.states.fsm_states import ProfileStates, MainMenuStates
 from aiogram.types import CallbackQuery
 from bot.shared.other_keyboards import get_menu_keyboard
+from bot.shared.user_service import ensure_user_exists
 
 logger = logging.getLogger(__name__)
 
 profile_router = Router()
 
 
-@profile_router.message(lambda m: m.text in get_profile_commands())
+@profile_router.message(lambda m: m.text and m.text in get_profile_commands())
 async def handle_profile(message: types.Message, state: FSMContext):
+    if not await ensure_user_exists(message, state):
+        state_data = await state.get_data()
+        return
     user = UserDB.get_or_none(tg_id=message.from_user.id)
     lang = user.language if user else "en"
     await state.update_data(lang=lang)

@@ -80,8 +80,6 @@ def get_entity_from_db(source_api: SourceApi, api_id: str) -> EntityDB:
 
 
 def add_entity_to_db(source_api: SourceApi, data: dict) -> EntityDB | None:
-    logger.info(f"source_api: {source_api}")
-    logger.info(f"data: {data}")
     if source_api == SourceApi.KP:
         try:
             entity, created = kp_details_to_db(data)
@@ -97,7 +95,6 @@ def add_entity_to_db(source_api: SourceApi, data: dict) -> EntityDB | None:
     elif source_api == SourceApi.OMDB:
         try:
             entity, created = omdb_details_to_db(data)
-            logger.info(f"entity OMDB: {entity.title}")
         except Exception as e:
             logger.error(f"Error adding entity to database: {e}")
             return None
@@ -181,15 +178,12 @@ async def show_gs_entity(
         entity = EntityDB.get_by_id(entity_id)
     elif api_id:
         data, success = await get_api_entity(source_api, api_id)
-        # logger.info(f"data: {data}")
-        # logger.info(f"success: {success}")
         if not success:
             await callback.message.edit_text(get_string("error_getting_entity", lang))
             await state.clear()
             await state.set_state(MainMenuStates.waiting_for_query)
             return False
         entity = add_entity_to_db(source_api, data)
-        logger.info(f"entity title: {entity.title}")
         if not entity:
             await callback.message.edit_text(get_string("error_getting_entity", lang))
             await state.clear()

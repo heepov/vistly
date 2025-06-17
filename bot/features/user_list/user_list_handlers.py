@@ -55,11 +55,11 @@ async def show_ls_list(
 
     total_results = query.count()
 
-    if not total_results:
+    if total_results == 0 or total_results is None:
         await state.clear()
         await state.set_state(MainMenuStates.waiting_for_query)
-        await msg.edit_text(
-            f'{get_string("user_list_empty", lang)}\n{get_string("start_message", lang)}',
+        await msg.answer(
+            f'{get_string("user_list_empty", lang)}',
             reply_markup=get_menu_keyboard(lang),
         )
         return False

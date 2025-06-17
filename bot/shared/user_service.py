@@ -1,4 +1,13 @@
 from database.models_db import UserDB
+from aiogram.types import Message, CallbackQuery
+from typing import Union, Tuple, Optional
+from bot.utils.strings import get_string
+from bot.shared.other_keyboards import get_language_keyboard
+from bot.states.fsm_states import MainMenuStates
+from aiogram.fsm.context import FSMContext
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def get_or_create_user(tg_user, lang) -> tuple[UserDB, bool]:
@@ -24,3 +33,33 @@ def get_or_create_user(tg_user, lang) -> tuple[UserDB, bool]:
         },
     )
     return user, created
+
+
+async def ensure_user_exists(
+    update: Union[Message, CallbackQuery], state: FSMContext
+) -> bool:
+    """
+    Проверить, существует ли пользователь в базе данных.
+    Если нет - показать выбор языка и вернуть False.
+    Если есть - вернуть True.
+
+    :param update: Message или CallbackQuery объект
+    :param state: FSMContext для управления состоянием
+    :return: True если пользователь существует, False если показан выбор языка
+    """
+
+    user = UserDB.get_or_none(tg_id=update.from_user.id)
+    if not user:
+        await state.set_state(MainMenuStates.waiting_for_language)
+        if isinstance(update, CallbackQuery):
+            await update.message.answer(
+                get_string("lang_choose"), reply_markup=get_language_keyboard()
+            )
+            await update.answer()
+        else:  # Message
+            await update.answer(
+                get_string("lang_choose"), reply_markup=get_language_keyboard()
+            )
+        return False
+
+    return True

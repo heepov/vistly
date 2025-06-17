@@ -13,6 +13,7 @@ from bot.utils.strings import get_string, get_all_commands
 from database.models_db import UserDB
 import re
 from bot.features.user_list.user_list_handlers import show_ls_list
+from bot.shared.user_service import ensure_user_exists
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +25,10 @@ def is_cyrillic(text):
 
 
 @search_router.callback_query(MainMenuStates.waiting_for_query)
-@search_router.message(lambda m: m.text not in get_all_commands())
+@search_router.message(lambda m: m.text and m.text not in get_all_commands())
 async def handle_text(message: types.Message, state: FSMContext):
+    if not await ensure_user_exists(message, state):
+        return
     current_state = await state.get_state()
     user = UserDB.get_or_none(tg_id=message.from_user.id)
     lang = user.language if user else "en"
@@ -86,6 +89,7 @@ async def handle_search_type(callback: CallbackQuery, state: FSMContext):
     elif data == "search_local":
         await state.update_data(status_type=StatusType.ALL)
         await callback.message.edit_text(get_string("searching_please_wait", lang))
+        await callback.message.delete()
         success = await show_ls_list(
             callback=callback,
             page=page,
@@ -93,6 +97,7 @@ async def handle_search_type(callback: CallbackQuery, state: FSMContext):
         )
 
         if success:
+            await callback.message.delete()
             await state.set_state(UserListStates.waiting_for_ls_select_entity)
             await callback.answer()
             return
