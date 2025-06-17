@@ -21,6 +21,7 @@ from bot.features.user_list.user_list_handlers import user_list_router, show_ls_
 from bot.features.profile.user_profile_handlers import profile_router
 from models.enum_classes import EntityType, StatusType
 from bot.features.deep_link.deep_link_entity_handler import show_dl_entity, dl_router
+from aiogram.types import FSInputFile, InputMediaPhoto
 import logging
 
 logger = logging.getLogger(__name__)
@@ -113,6 +114,7 @@ async def handle_language_selection(callback: types.CallbackQuery, state: FSMCon
         await state.set_state(MainMenuStates.waiting_for_query)
         await callback.answer()
 
+
 @router.message(lambda m: m.text in get_restart_commands())
 async def handle_cancel(message: types.Message, state: FSMContext):
     await cmd_start(message, state)
@@ -122,9 +124,16 @@ async def handle_cancel(message: types.Message, state: FSMContext):
 async def cmd_help(message: types.Message):
     user = UserDB.get_or_none(tg_id=message.from_user.id)
     lang = user.language if user else "en"
-    await message.answer(
-        get_string("help_message", lang), reply_markup=get_menu_keyboard(lang)
-    )
+    # Отправляем две картинки как альбом, caption только к первой
+    media = [
+        InputMediaPhoto(
+            media=FSInputFile("bot/img/instruction_en_001.png"),
+            caption=get_string("help_message", lang),
+            parse_mode="HTML",
+        ),
+        InputMediaPhoto(media=FSInputFile("bot/img/instruction_en_002.png")),
+    ]
+    await message.answer_media_group(media)
 
 
 @router.message(lambda m: m.text in get_list_commands())

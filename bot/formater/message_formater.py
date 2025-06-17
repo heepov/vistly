@@ -64,7 +64,9 @@ def format_entity_details(entity: Entity, lang: str = "en") -> str:
     )
 
     share_link = f"https://t.me/{BOT_USERNAME}?start=entity_{entity.id}"
-    text_link = f'<a href="{share_link}">Посмотреть в боте</a>'
+    text_link = (
+        f'<a href="{share_link}">{get_string("entity_share_link_text", lang)}</a>'
+    )
 
     message_length = MAX_MESSAGE_LENGTH - len(
         f"{header}\n\n{quote_block}\n\n{text_link}"
