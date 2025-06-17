@@ -1,12 +1,16 @@
 from aiogram import Router, types
 from aiogram.filters import Command
-from bot.shared.other_keyboards import get_menu_keyboard, get_language_keyboard
+from bot.shared.other_keyboards import (
+    get_menu_keyboard,
+    get_language_keyboard,
+)
 from bot.shared.user_service import get_or_create_user
 from aiogram.fsm.context import FSMContext
 from bot.states.fsm_states import (
     MainMenuStates,
     UserListStates,
     DeepLinkStates,
+    ProfileStates,
 )
 from database.models_db import UserDB
 from bot.utils.strings import (
@@ -102,13 +106,15 @@ async def handle_language_selection(callback: types.CallbackQuery, state: FSMCon
             await state.set_state(DeepLinkStates.waiting_for_dl_action_entity)
         else:
             await state.clear()
-            await callback.message.edit_text(
+            await callback.message.delete()
+            await callback.message.answer(
                 get_string("start_message", lang), reply_markup=get_menu_keyboard(lang)
             )
             await state.set_state(MainMenuStates.waiting_for_query)
         await callback.answer()
     else:
-        await callback.message.edit_text(
+        await callback.message.delete()
+        await callback.message.answer(
             get_string("start_message", lang), reply_markup=get_menu_keyboard(lang)
         )
         await state.set_state(MainMenuStates.waiting_for_query)
@@ -170,3 +176,50 @@ async def handle_all_commands(message: types.Message):
     user = UserDB.get_or_none(tg_id=message.from_user.id)
     lang = user.language if user else "en"
     await message.answer(f"{get_string('unknown_command', lang)}")
+
+
+@router.callback_query(lambda c: c.data.startswith("menu_"))
+async def handle_menu_actions(callback: types.CallbackQuery, state: FSMContext):
+    state_data = await state.get_data()
+    lang = state_data.get("lang", "en")
+    action = callback.data.split("_")[1]
+
+    if action == "profile":
+        await callback.message.delete()
+        await callback.message.answer(
+            get_string("profile_message", lang).format(
+                user_name=callback.from_user.full_name, entities_count=0
+            ),
+            reply_markup=get_profile_keyboard(lang),
+        )
+        await state.set_state(ProfileStates.waiting_for_profile_action)
+    elif action == "restart":
+        await state.clear()
+        await callback.message.delete()
+        await callback.message.answer(
+            get_string("start_message", lang), reply_markup=get_menu_keyboard(lang)
+        )
+        await state.set_state(MainMenuStates.waiting_for_query)
+    elif action == "list":
+        await state.clear()
+        await state.update_data(
+            query=None,
+            entity_type_search=EntityType.ALL,
+            lang=lang,
+            status_type=StatusType.ALL,
+        )
+        success = await show_ls_list(
+            callback=callback,
+            page=1,
+            state=state,
+        )
+        if success:
+            await state.set_state(UserListStates.waiting_for_ls_select_entity)
+        else:
+            await state.clear()
+            await state.set_state(MainMenuStates.waiting_for_query)
+            await callback.message.answer(
+                get_string("start_message", lang),
+                reply_markup=get_menu_keyboard(lang),
+            )
+    await callback.answer()
