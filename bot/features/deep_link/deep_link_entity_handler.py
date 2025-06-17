@@ -2,7 +2,7 @@ import logging
 from aiogram import Router
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
-from bot.features.deep_link.deep_link_keyboard import (
+from bot.features.deep_link.deep_link_entity_keyboards import (
     get_deep_link_keyboard,
     get_dl_add_to_list_keyboard,
 )
@@ -11,7 +11,7 @@ from bot.shared.main_commad_handlers import get_menu_keyboard
 from database.models_db import UserDB, EntityDB, UserEntityDB
 from models.factories import build_entity_from_db
 from bot.formater.message_formater import format_entity_details
-from bot.states.fsm_states import MainMenuStates, SearchStates, DeepLinkStates
+from bot.states.fsm_states import MainMenuStates, DeepLinkStates
 from aiogram.exceptions import TelegramBadRequest
 from models.enum_classes import StatusType
 from bot.utils.strings import get_status_string

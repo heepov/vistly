@@ -1,7 +1,5 @@
 import logging
-from typing import List, Dict
 from bot.utils.strings import get_string
-from config.config import BOT_USERNAME
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from models.enum_classes import StatusType

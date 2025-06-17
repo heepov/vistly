@@ -4,9 +4,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from typing import List, Dict
 from bot.utils.strings import get_string
-from models.enum_classes import EntityType, SourceApi, StatusType
-from config.config import BOT_USERNAME
-
+from models.enum_classes import SourceApi, StatusType
 logger = logging.getLogger(__name__)
 
 

@@ -8,7 +8,7 @@ from bot.features.search.search_gs_keyboards import (
     get_gs_add_to_list_keyboard,
 )
 from database.models_db import EntityDB, UserEntityDB, UserDB
-from models.enum_classes import EntityType, StatusType, SourceApi
+from models.enum_classes import StatusType, SourceApi
 from aiogram.fsm.context import FSMContext
 from bot.states.fsm_states import SearchStates, MainMenuStates
 from bot.formater.message_formater import format_entity_details

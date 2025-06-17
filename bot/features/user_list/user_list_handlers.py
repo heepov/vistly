@@ -10,17 +10,16 @@ from bot.features.user_list.user_list_keyboards import (
     get_season_number_keyboard,
 )
 from database.models_db import UserEntityDB, UserDB
-from models.enum_classes import StatusType, EntityType
+from models.enum_classes import StatusType
 from bot.states.fsm_states import MainMenuStates, UserListStates
 from bot.shared.other_keyboards import get_menu_keyboard
 from bot.formater.message_formater import format_entity_details
 from database.models_db import UserEntityDB, EntityDB
-from aiogram import Router, types
+from aiogram import Router
 from models.factories import build_entity_from_db
 from bot.utils.strings import get_string, get_status_string
 from peewee import fn
 from aiogram.exceptions import TelegramBadRequest
-from config.config import BOT_USERNAME
 
 logger = logging.getLogger(__name__)
 

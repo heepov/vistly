@@ -6,7 +6,6 @@ from aiogram.fsm.context import FSMContext
 from bot.states.fsm_states import (
     MainMenuStates,
     UserListStates,
-    SearchStates,
     DeepLinkStates,
 )
 from database.models_db import UserDB
@@ -21,7 +20,7 @@ from bot.features.search.search_gs_handlers import gs_router
 from bot.features.user_list.user_list_handlers import user_list_router, show_ls_list
 from bot.features.profile.user_profile_handlers import profile_router
 from models.enum_classes import EntityType, StatusType
-from bot.features.deep_link.deep_link_handler import show_dl_entity, dl_router
+from bot.features.deep_link.deep_link_entity_handler import show_dl_entity, dl_router
 import logging
 
 logger = logging.getLogger(__name__)

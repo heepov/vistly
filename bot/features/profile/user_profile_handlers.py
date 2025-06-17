@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram import Router
 from aiogram import types
 from bot.utils.strings import get_string, get_profile_commands
-from database.models_db import UserDB, UserEntityDB
+from database.models_db import UserDB
 from bot.features.profile.user_profile_keyboards import get_profile_keyboard
 from bot.states.fsm_states import ProfileStates, MainMenuStates
 from aiogram.types import CallbackQuery
