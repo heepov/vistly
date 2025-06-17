@@ -1,22 +1,19 @@
 import asyncio
 import logging
+from config.logger_config import setup_logger
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 
 from config.config import load_config
-from handlers.router import router
+from bot.shared.main_commad_handlers import router
 from database.connection import setup_database
 
 logger = logging.getLogger(__name__)
 
 
 async def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    )
-
+    setup_logger()
     config = load_config()
 
     # Инициализируем базу данных
@@ -36,4 +33,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
-        logger.info("Бот остановлен")
+        logger.info("Bot stopped")

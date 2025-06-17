@@ -1,23 +1,28 @@
 from enum import Enum
 
 
-class PrivacyType(Enum):
-    PUBLIC = "public"
-    PRIVATE = "private"
-    FRIENDS = "friends"
-
-
-class EntityType(Enum):
+class EntityType(str, Enum):
     MOVIE = "movie"
     SERIES = "series"
     GAME = "game"
     BOOK = "book"
     MIXED = "mixed"
+    ALL = "all"
     UNDEFINED = "undefined"
 
 
-class StatusType(Enum):
+class StatusType(str, Enum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     PLANNING = "planning"
-    UNDEFINED = "undefined"
+    ALL = "all"
+
+
+class LanguageType(str, Enum):
+    RU = "ru"
+    EN = "en"
+
+
+class SourceApi(str, Enum):
+    OMDB = "omdb"
+    KP = "kp"

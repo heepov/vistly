@@ -1,14 +1,7 @@
 from config.config import Config
 import logging
 from peewee import PostgresqlDatabase
-from database.models import (
-    User,
-    Entity,
-    Rating,
-    UserEntity,
-    Collection,
-    CollectionEntity,
-)
+from database.models_db import UserDB, EntityDB, RatingDB, UserEntityDB
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +20,7 @@ def setup_database(config: Config) -> None:
         )
 
         # Устанавливаем базу данных для моделей
-        models = [
-            User,
-            Entity,
-            Rating,
-            UserEntity,
-            Collection,
-            CollectionEntity,
-        ]
+        models = [UserDB, EntityDB, RatingDB, UserEntityDB]
         for model in models:
             model._meta.database = db
 
