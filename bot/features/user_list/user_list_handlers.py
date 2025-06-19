@@ -172,6 +172,14 @@ async def handle_ls_select_entity(callback: CallbackQuery, state: FSMContext):
         except (ValueError, IndexError):
             await callback.answer("Invalid callback data")
             return
+
+        # Проверяем, изменился ли статус
+        current_status = state_data.get("status_type")
+        if current_status == status:
+            # Если статус не изменился, просто отвечаем на callback
+            await callback.answer()
+            return
+
         await state.update_data(status_type=status)
         success = await show_ls_list(callback=callback, page=1, state=state)
         if success:
