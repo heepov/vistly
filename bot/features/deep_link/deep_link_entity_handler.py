@@ -47,7 +47,13 @@ async def show_dl_entity(
             .join(EntityDB)
             .where(
                 (UserEntityDB.user_id == user)
-                & ((UserEntityDB.entity == entity) | (EntityDB.src_id == entity.src_id))
+                & (
+                    (UserEntityDB.entity == entity)
+                    | (
+                        (EntityDB.src_id == entity.src_id)
+                        & (EntityDB.src_id.is_null(False))
+                    )
+                )
             )
             .exists()
         )

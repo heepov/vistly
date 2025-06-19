@@ -26,5 +26,6 @@ class DeepLinkStates(StatesGroup):
     waiting_for_dl_action_entity = State()
     waiting_for_dl_add_to_list = State()
 
+
 class ProfileStates(StatesGroup):
     waiting_for_profile_action = State()
