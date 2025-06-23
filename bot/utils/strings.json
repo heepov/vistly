@@ -1,0 +1,278 @@
+{
+  "help_message": {
+    "en": "<b>Use the bottom menu buttons</b> or commands:\n<code>/list</code> - your watchlist\n<code>/profile</code> - your profile\n<code>/restart</code> - restart bot\n<code>/help</code> - show instructions\n\n🔍 Search\n• Type movie/series name\n• Choose Online or My List\n• Use ◀️▶️ to browse\n• Tap \"Save\" to add to list\n\n📄 Watchlist\n• Filter by status\n• Add rating\n• Change status\n• Set season (series)\n• Remove from list\n\n👤 Profile & Settings\n• View profile & share link\n• Change language (EN/RU)\n\n🔗 Sharing\n• Tap title to copy\n• Forward to share\n• \"View in bot\" to open",
+    "ru": "<b>Используйте кнопки меню</b>\nили команды:\n<code>/list</code> – ваш список\n<code>/profile</code> – профиль\n<code>/restart</code> – перезапуск\n<code>/help</code> – инструкции\n\n🔍 Поиск\n• Введите название\n• Онлайн или Мой список\n• Стрелки ◀️▶️ для просмотра\n• «Сохранить» для добавления\n\n📄 Список\n• Фильтр по статусу\n• Оценка\n• Смена статуса\n• Сезон (для сериалов)\n• Удаление\n\n👤 Профиль\n• Просмотр и ссылка\n• Смена языка (RU/EN)\n\n🔗 Поделиться\n• Нажать для копирования\n• Переслать другу\n• «В боте» для открытия"
+  },
+  "lang_choose": {
+    "en": "Choose language:",
+    "ru": "Выберите язык:"
+  },
+  "start_message": {
+    "en": "Just send movie or series title to search:",
+    "ru": "Просто пришли название фильма или сериала:"
+  },
+  "profile": {
+    "en": "Profile",
+    "ru": "Профиль"
+  },
+  "restart": {
+    "en": "Reset",
+    "ru": "Сброс"
+  },
+  "list": {
+    "en": "My list",
+    "ru": "Мой список"
+  },
+  "global": {
+    "en": "Global search",
+    "ru": "Глобальный"
+  },
+  "local": {
+    "en": "My list search",
+    "ru": "В моем списке"
+  },
+  "search_choose_question": {
+    "en": "Choose search type:",
+    "ru": "Выберите тип поиска:"
+  },
+  "message_error": {
+    "en": "Invalid input. Use /restart to restart the bot",
+    "ru": "Неверный ввод. Используйте /restart"
+  },
+  "searching_please_wait": {
+    "en": "Searching...",
+    "ru": "Поиск..."
+  },
+  "nothing_found_query": {
+    "en": "No results for: <b>{query}</b>",
+    "ru": "По вашему запросу <b>{query}</b> ничего не найдено"
+  },
+  "found_results": {
+    "en": "For your query: <b>{query}</b>\nFound <b>{total_results}</b> results",
+    "ru": "По вашему запросу: <b>{query}</b>\nНайдено <b>{total_results}</b> результатов"
+  },
+  "feature_developing": {
+    "en": "Feature is developing",
+    "ru": "Функция в разработке"
+  },
+  "page_of_total_pages": {
+    "en": "{page} of {total_pages}",
+    "ru": "{page} из {total_pages}"
+  },
+  "change_entity_type": {
+    "en": "Filter",
+    "ru": "Фильтр"
+  },
+  "cancel": {
+    "en": "Cancel",
+    "ru": "Отмена"
+  },
+  "back": {
+    "en": "Back",
+    "ru": "Назад"
+  },
+  "in_progress": {
+    "en": "In progress",
+    "ru": "Смотрю"
+  },
+  "completed": {
+    "en": "Completed",
+    "ru": "Посмотрел"
+  },
+  "planning": {
+    "en": "Planning",
+    "ru": "Планирую"
+  },
+  "add_to_list": {
+    "en": "Save",
+    "ru": "Сохранить"
+  },
+  "select_status_type_for": {
+    "en": "Select status for <b>{entity_name}</b>",
+    "ru": "Выберите статус для <b>{entity_name}</b>"
+  },
+  "entity_added_to_list": {
+    "en": "<b>{entity_title}</b> added with <b>{status_type}</b> status",
+    "ru": "<b>{entity_title}</b> добавлен со статусом <b>{status_type}</b>"
+  },
+  "user_list_empty": {
+    "en": "Your list is empty",
+    "ru": "Ваш список пуст"
+  },
+  "user_list_empty_status": {
+    "en": "No {status} items in your list",
+    "ru": "Нет объектов со статусом {status}"
+  },
+  "rating": {
+    "en": "Rating",
+    "ru": "Рейтинг"
+  },
+  "runtime": {
+    "en": "Runtime",
+    "ru": "Продолжительность"
+  },
+  "seasons": {
+    "en": "Seasons",
+    "ru": "Сезоны"
+  },
+  "genre": {
+    "en": "Genre",
+    "ru": "Жанр"
+  },
+  "country": {
+    "en": "Country",
+    "ru": "Страна"
+  },
+  "director": {
+    "en": "Director",
+    "ru": "Режиссёр"
+  },
+  "actors": {
+    "en": "Actors",
+    "ru": "Актеры"
+  },
+  "movie": {
+    "en": "Movie",
+    "ru": "Фильм"
+  },
+  "series": {
+    "en": "Series",
+    "ru": "Сериал"
+  },
+  "game": {
+    "en": "Game",
+    "ru": "Игра"
+  },
+  "book": {
+    "en": "Book",
+    "ru": "Книга"
+  },
+  "mixed": {
+    "en": "Mixed",
+    "ru": "Смешанный"
+  },
+  "undefined": {
+    "en": "Undefined",
+    "ru": "Неопределенный"
+  },
+  "set_rating": {
+    "en": "Set rating",
+    "ru": "Оценить"
+  },
+  "user_rating": {
+    "en": "Rating: {rating}",
+    "ru": "Оценка: {rating}"
+  },
+  "set_season": {
+    "en": "Set season",
+    "ru": "Сезон"
+  },
+  "user_season": {
+    "en": "Season: {season}",
+    "ru": "Сезон: {season}"
+  },
+  "set_status": {
+    "en": "Set status",
+    "ru": "Статус"
+  },
+  "delete": {
+    "en": "Delete",
+    "ru": "Удалить"
+  },
+  "yes": {
+    "en": "Yes",
+    "ru": "Да"
+  },
+  "no": {
+    "en": "No",
+    "ru": "Нет"
+  },
+  "clean": {
+    "en": "Clean",
+    "ru": "Очистить"
+  },
+  "ask_rating": {
+    "en": "Set rate {entity_type} <b>{entity_name}</b>",
+    "ru": "Оцените {entity_type} <b>{entity_name}</b>"
+  },
+  "ask_season": {
+    "en": "Set season for {entity_type} <b>{entity_name}</b>",
+    "ru": "Укажите сезон для {entity_type} <b>{entity_name}</b>"
+  },
+  "ask_status": {
+    "en": "Set status for {entity_type} <b>{entity_name}</b>",
+    "ru": "Укажите статус для {entity_type} <b>{entity_name}</b>"
+  },
+  "ask_delete": {
+    "en": "Delete {entity_type} <b>{entity_name}</b>?",
+    "ru": "Удалить {entity_type} <b>{entity_name}</b>?"
+  },
+  "entity_deleted": {
+    "en": "Removed from your list",
+    "ru": "Удалено из списка"
+  },
+  "user_list_title": {
+    "en": "You have <b>{total_results}</b> with <b>{status_text}</b>:",
+    "ru": "У вас <b>{total_results}</b> со статусом <b>{status_text}</b>:"
+  },
+  "confirm": {
+    "en": "Confirm",
+    "ru": "Подтвердить"
+  },
+  "already_added": {
+    "en": "Already added",
+    "ru": "Уже добавлено"
+  },
+  "unknown_command": {
+    "en": "Unknown command. Use /help for help",
+    "ru": "Неизвестная команда. Используйте /help"
+  },
+  "error_message": {
+    "en": "Error. Use /restart to restart",
+    "ru": "Ошибка. Используйте /restart"
+  },
+  "min": {
+    "en": "min",
+    "ru": "мин"
+  },
+  "error_getting_results": {
+    "en": "Error getting results",
+    "ru": "Ошибка получения результатов"
+  },
+  "error_getting_entity": {
+    "en": "Error getting entity",
+    "ru": "Ошибка получения объекта"
+  },
+  "change_language": {
+    "en": "🇷🇺 Русский",
+    "ru": "🇬🇧 English"
+  },
+  "share_list": {
+    "en": "Share list",
+    "ru": "Поделиться списком"
+  },
+  "profile_message": {
+    "en": "Hi <b>{user_name}</b>!\nYou have <b>{entities_count}</b> items.\n\nChange language or share your list.",
+    "ru": "Привет <b>{user_name}</b>!\nУ вас <b>{entities_count}</b> тайтлов.\n\nСмените язык или поделитесь списком."
+  },
+  "entity_share_link_text": {
+    "en": "View in bot",
+    "ru": "Посмотреть в боте"
+  },
+  "status_in_progress": {
+    "en": "In progress",
+    "ru": "Смотрю"
+  },
+  "status_completed": {
+    "en": "Completed",
+    "ru": "Посмотрел"
+  },
+  "status_planning": {
+    "en": "Planning",
+    "ru": "Хочу"
+  },
+  "status_all": {
+    "en": "All",
+    "ru": "Все"
+  }
+} 
