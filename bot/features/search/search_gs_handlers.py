@@ -453,10 +453,14 @@ async def handle_gs_add_to_list(callback: CallbackQuery, state: FSMContext):
                 user_entity.save()
 
             # Показываем сообщение об успехе
-            success_message = f"{get_string('entity_added_to_list', lang).format(
-                entity_title=entity.title,
-                status_type=get_status_string(status.value, lang),
-            )}\n\n{get_string('start_message', lang)}"
+            success_message = (
+                get_string("entity_added_to_list", lang).format(
+                    entity_title=entity.title,
+                    status_type=get_status_string(status.value, lang),
+                )
+                + "\n\n"
+                + get_string("start_message", lang)
+            )
             await callback.message.delete()
             await callback.message.answer(
                 success_message,
