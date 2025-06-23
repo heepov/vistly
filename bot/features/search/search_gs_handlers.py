@@ -1,6 +1,7 @@
 import logging
+from typing import Optional, Tuple, Union, Any
 from aiogram import Router
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Message
 from bot.shared.other_keyboards import get_menu_keyboard
 from bot.features.search.search_gs_keyboards import (
     get_gs_results_keyboard,
@@ -24,9 +25,97 @@ gs_router = Router()
 logger = logging.getLogger(__name__)
 
 
+# Вспомогательные функции для уменьшения дублирования
+def parse_callback_data(data: str, expected_parts: int) -> Optional[Tuple]:
+    """Парсит callback данные с проверкой количества частей"""
+    try:
+        parts = data.split(":", expected_parts)
+        if (
+            len(parts) != expected_parts + 1
+        ):  # +1 потому что split возвращает n+1 частей
+            return None
+        return tuple(parts[1:])  # Пропускаем префикс
+    except (ValueError, IndexError):
+        return None
+
+
+def get_message_from_callback(callback: Union[CallbackQuery, Message]) -> Message:
+    """Получает сообщение из callback или message"""
+    return callback.message if isinstance(callback, CallbackQuery) else callback
+
+
+async def safe_edit_or_send_message(
+    message: Message, text: str, reply_markup=None, parse_mode: str = None
+) -> None:
+    """Безопасно редактирует или отправляет сообщение, обрабатывая фото"""
+    if getattr(message, "photo", None):
+        await message.delete()
+        await message.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
+    else:
+        try:
+            await message.edit_text(
+                text, reply_markup=reply_markup, parse_mode=parse_mode
+            )
+        except TelegramBadRequest:
+            await message.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
+
+
+async def safe_send_photo_or_text(
+    message: Message, photo_url: str, caption: str, reply_markup=None
+) -> None:
+    """Безопасно отправляет фото или текст, обрабатывая ошибки"""
+    if photo_url and photo_url != "N/A":
+        await message.delete()
+        try:
+            await message.answer_photo(
+                photo_url, caption=caption, reply_markup=reply_markup
+            )
+        except TelegramBadRequest:
+            await message.answer(caption, reply_markup=reply_markup)
+    else:
+        await message.edit_text(caption, reply_markup=reply_markup)
+
+
+def get_entity_safe(entity_id: int) -> Optional[EntityDB]:
+    """Безопасно получает entity с обработкой ошибок"""
+    try:
+        return EntityDB.get_by_id(entity_id)
+    except EntityDB.DoesNotExist:
+        return None
+
+
+async def handle_error_and_return_to_menu(
+    callback: CallbackQuery, state: FSMContext, error_message: str, lang: str
+) -> None:
+    """Обрабатывает ошибку и возвращает в главное меню"""
+    await callback.message.edit_text(error_message)
+    await state.clear()
+    await state.set_state(MainMenuStates.waiting_for_query)
+
+
+async def handle_back_to_list(callback: CallbackQuery, state: FSMContext) -> bool:
+    """Обрабатывает возврат к списку результатов"""
+    success = await show_gs_list(callback=callback, state=state)
+    if success:
+        await callback.answer()
+    return success
+
+
+async def handle_back_to_entity(
+    callback: CallbackQuery, state: FSMContext, entity_id: int
+) -> bool:
+    """Обрабатывает возврат к деталям entity"""
+    success = await show_gs_entity(callback=callback, state=state, entity_id=entity_id)
+    if success:
+        await callback.answer()
+    return success
+
+
+# API функции
 async def get_api_search_list(
     source_api: SourceApi, query: str, page: int
 ) -> tuple[list, int, bool]:
+    """Получает список результатов поиска из API"""
     if source_api == SourceApi.KP:
         try:
             response = await KpService.search_movies_series(query, page)
@@ -52,6 +141,7 @@ async def get_api_search_list(
 
 
 async def get_api_entity(source_api: SourceApi, api_id: str) -> tuple[dict, bool]:
+    """Получает детали entity из API"""
     if source_api == SourceApi.KP:
         try:
             response = await KpService.get_item_details(api_id)
@@ -73,6 +163,7 @@ async def get_api_entity(source_api: SourceApi, api_id: str) -> tuple[dict, bool
 
 
 def get_entity_from_db(source_api: SourceApi, api_id: str) -> EntityDB:
+    """Получает entity из базы данных по API ID"""
     if source_api == SourceApi.KP:
         return EntityDB.get_or_none(kp_id=api_id)
     elif source_api == SourceApi.OMDB:
@@ -80,6 +171,7 @@ def get_entity_from_db(source_api: SourceApi, api_id: str) -> EntityDB:
 
 
 def add_entity_to_db(source_api: SourceApi, data: dict) -> EntityDB | None:
+    """Добавляет entity в базу данных"""
     if source_api == SourceApi.KP:
         try:
             entity, created = kp_details_to_db(data)
@@ -107,21 +199,23 @@ def add_entity_to_db(source_api: SourceApi, data: dict) -> EntityDB | None:
     return None
 
 
+# Основные функции отображения
 async def show_gs_list(
     callback: CallbackQuery,
-    page: int,
     state: FSMContext,
 ) -> bool:
+    """Показывает результаты поиска по запросу"""
     state_data = await state.get_data()
     source_api = state_data.get("source_api")
     query = state_data.get("query")
-    entity_type_search = state_data.get("entity_type_search")
     lang = state_data.get("lang")
-    """Показывает результаты поиска по запросу"""
+    page = state_data.get("page", 1)
+
     results, total_results, success = await get_api_search_list(source_api, query, page)
     if not success:
-        await callback.message.edit_text(get_string("error_getting_results", lang))
-        await state.set_state(MainMenuStates.waiting_for_query)
+        await handle_error_and_return_to_menu(
+            callback, state, get_string("error_getting_results", lang), lang
+        )
         return False
 
     if not results:
@@ -144,30 +238,20 @@ async def show_gs_list(
         total_results=total_results, query=query
     )
 
-    if getattr(callback.message, "photo", None):
-        await callback.message.delete()
-        await callback.message.answer(
-            title_text,
-            reply_markup=keyboard,
-            parse_mode="HTML",
-        )
-    else:
-        await callback.message.edit_text(
-            title_text,
-            reply_markup=keyboard,
-            parse_mode="HTML",
-        )
+    await safe_edit_or_send_message(
+        callback.message, title_text, keyboard, parse_mode="HTML"
+    )
     await state.set_state(SearchStates.waiting_for_gs_select_entity)
     return True
 
 
 async def show_gs_entity(
     callback: CallbackQuery,
-    page: int,
     state: FSMContext,
     entity_id: int = None,
     api_id: str = None,
 ) -> bool:
+    """Показывает детали entity"""
     state_data = await state.get_data()
     source_api = state_data.get("source_api")
     lang = state_data.get("lang")
@@ -175,25 +259,29 @@ async def show_gs_entity(
     entity = None
 
     if entity_id:
-        entity = EntityDB.get_by_id(entity_id)
+        entity = get_entity_safe(entity_id)
+        # Сохраняем entity_id в state для возможности возврата
+        await state.update_data(current_entity_id=entity_id)
     elif api_id:
         data, success = await get_api_entity(source_api, api_id)
         if not success:
-            await callback.message.edit_text(get_string("error_getting_entity", lang))
-            await state.clear()
-            await state.set_state(MainMenuStates.waiting_for_query)
+            await handle_error_and_return_to_menu(
+                callback, state, get_string("error_getting_entity", lang), lang
+            )
             return False
         entity = add_entity_to_db(source_api, data)
         if not entity:
-            await callback.message.edit_text(get_string("error_getting_entity", lang))
-            await state.clear()
-            await state.set_state(MainMenuStates.waiting_for_query)
+            await handle_error_and_return_to_menu(
+                callback, state, get_string("error_getting_entity", lang), lang
+            )
             return False
+        # Сохраняем entity_id в state для возможности возврата
+        await state.update_data(current_entity_id=entity.id)
 
     if entity is None:
-        await callback.message.edit_text(get_string("error_getting_entity", lang))
-        await state.clear()
-        await state.set_state(MainMenuStates.waiting_for_query)
+        await handle_error_and_return_to_menu(
+            callback, state, get_string("error_getting_entity", lang), lang
+        )
         return False
 
     entity_full = build_entity_from_db(entity)
@@ -206,88 +294,66 @@ async def show_gs_entity(
             .join(EntityDB)
             .where(
                 (UserEntityDB.user_id == user)
-                & ((UserEntityDB.entity == entity) | (EntityDB.src_id == entity.src_id))
+                & (
+                    (UserEntityDB.entity == entity)
+                    | (
+                        (EntityDB.src_id == entity.src_id)
+                        & (EntityDB.src_id.is_null(False))
+                    )
+                )
             )
             .exists()
         )
 
     keyboard = get_gs_entity_detail_keyboard(
         entity_id=entity_full.id,
-        page=page,
         lang=lang,
         already_added=already_added,
     )
-    if entity_full.poster_url and entity_full.poster_url != "N/A":
-        await callback.message.delete()
-        try:
-            await callback.message.answer_photo(
-                entity_full.poster_url,
-                caption=message,
-                reply_markup=keyboard,
-            )
-        except TelegramBadRequest:
-            await callback.message.answer(
-                message,
-                reply_markup=keyboard,
-            )
-    else:
-        await callback.message.edit_text(
-            message,
-            reply_markup=keyboard,
-        )
+
+    await safe_send_photo_or_text(
+        callback.message, entity_full.poster_url, message, keyboard
+    )
     await state.set_state(SearchStates.waiting_for_gs_action_entity)
     await callback.answer()
     return True
 
 
+# Обработчики callback
 @gs_router.callback_query(SearchStates.waiting_for_gs_select_entity)
 async def handle_gs_select_entity(callback: CallbackQuery, state: FSMContext):
     state_data = await state.get_data()
-    source_api = state_data.get("source_api")
     lang = state_data.get("lang")
     data = callback.data
 
-    if data.startswith("gs_page:"):
-        try:
-            _, page = data.split(":", 1)
-            page = int(page)
-        except (ValueError, IndexError):
-            logger.error(f"Invalid callback data: {data}")
-            await callback.answer("Invalid callback data")
-            return
+    if data == "gs_page_prev":
+        current_page = state_data.get("page", 1)
+        if current_page > 1:
+            await state.update_data(page=current_page - 1)
+            await handle_back_to_list(callback, state)
 
-        success = await show_gs_list(
-            callback=callback,
-            page=page,
-            state=state,
-        )
-        if success:
-            await callback.answer()
-            return
-        return
+    elif data == "gs_page_next":
+        current_page = state_data.get("page", 1)
+        await state.update_data(page=current_page + 1)
+        await handle_back_to_list(callback, state)
 
     elif data.startswith("gs_select:"):
-        try:
-            _, page, api_id = data.split(":", 3)
-            page = int(page)
-        except (ValueError, IndexError):
-            logger.error(f"Invalid callback data: {data}")
+        parsed = parse_callback_data(data, 1)
+        if not parsed:
             await callback.answer("Invalid callback data")
             return
+        api_id = parsed[0]
 
         success = await show_gs_entity(
             callback=callback,
-            page=page,
             state=state,
             api_id=api_id,
         )
         if success:
             await callback.answer()
-        return
 
-    elif data.startswith("gs_filter:"):
+    elif data == "gs_filter":
         await callback.answer(get_string("feature_developing", lang), show_alert=False)
-        return
 
     elif data == "gs_cancel":
         await callback.message.delete()
@@ -298,131 +364,85 @@ async def handle_gs_select_entity(callback: CallbackQuery, state: FSMContext):
         await state.clear()
         await state.set_state(MainMenuStates.waiting_for_query)
         await callback.answer()
-        return
 
     elif data == "noop":
         await callback.answer()
-        return
 
 
 @gs_router.callback_query(SearchStates.waiting_for_gs_action_entity)
 async def handle_gs_action_entity(callback: CallbackQuery, state: FSMContext):
     state_data = await state.get_data()
-    source_api = state_data.get("source_api")
     lang = state_data.get("lang")
     data = callback.data
 
-    if data.startswith("gs_back:"):
-        try:
-            _, page = data.split(":", 2)
-            page = int(page)
-        except (ValueError, IndexError):
-            logger.error(f"Invalid callback data: {data}")
-            await callback.answer("Invalid callback data")
-            return
-
-        success = await show_gs_list(
-            callback=callback,
-            page=page,
-            state=state,
-        )
-        if success:
-            await state.set_state(SearchStates.waiting_for_gs_select_entity)
-            await callback.answer()
-            return
+    if data == "gs_back":
+        await handle_back_to_list(callback, state)
 
     elif data.startswith("gs_add:"):
-        try:
-            _, page, entity_id = data.split(":", 3)
-            page = int(page)
-            entity_id = int(entity_id)
-        except (ValueError, IndexError):
+        parsed = parse_callback_data(data, 1)
+        if not parsed:
             await callback.answer("Invalid callback data")
             return
+        entity_id = int(parsed[0])
 
         # Получаем название сущности для отображения
-        try:
-            entity = EntityDB.get_by_id(entity_id)
-            entity_name = entity.title
-        except:
-            entity_name = "Entity Name"
+        entity = get_entity_safe(entity_id)
+        entity_name = entity.title if entity else "Entity Name"
 
-        # Проверяем, есть ли фото в сообщении
-        has_photo = getattr(callback.message, "photo", None) is not None
+        title_text = get_string("select_status_type_for", lang).format(
+            entity_name=entity_name
+        )
+        keyboard = get_gs_add_to_list_keyboard(entity_id=entity_id, lang=lang)
 
-        # Показываем меню выбора статуса
-        if has_photo:
-            # Если сообщение с фото, нужно удалить его и отправить новое
-            await callback.message.delete()
-            await callback.message.answer(
-                get_string("select_status_type_for", lang).format(
-                    entity_name=entity_name
-                ),
-                reply_markup=get_gs_add_to_list_keyboard(
-                    entity_id=entity_id,
-                    page=page,
-                    lang=lang,
-                ),
-            )
-        else:
-            # Если обычное текстовое сообщение, можно просто отредактировать его
-            await callback.message.edit_text(
-                get_string("select_status_type_for", lang).format(
-                    entity_name=entity_name
-                ),
-                reply_markup=get_gs_add_to_list_keyboard(
-                    entity_id=entity_id,
-                    page=page,
-                    lang=lang,
-                ),
-            )
+        await safe_edit_or_send_message(
+            callback.message, title_text, keyboard, parse_mode="HTML"
+        )
 
         # Переходим в состояние ожидания выбора статуса
         await state.set_state(SearchStates.waiting_for_gs_add_to_list)
         await callback.answer()
-        return
 
 
 @gs_router.callback_query(SearchStates.waiting_for_gs_add_to_list)
-async def handle_gs_add_to_list_(callback: CallbackQuery, state: FSMContext):
+async def handle_gs_add_to_list(callback: CallbackQuery, state: FSMContext):
     state_data = await state.get_data()
     lang = state_data.get("lang")
     data = callback.data
     user = UserDB.get_or_none(tg_id=callback.from_user.id)
 
-    if data.startswith("gs_back:"):
-        try:
-            _, page, entity_id = data.split(":", 3)
-            page = int(page)
-            entity_id = int(entity_id)
-        except (ValueError, IndexError):
-            logger.error(f"Invalid callback data: {data}")
+    if data == "gs_back":
+        # Возвращаемся к деталям entity
+        entity_id = state_data.get("current_entity_id")
+        if entity_id:
+            success = await show_gs_entity(
+                callback=callback,
+                state=state,
+                entity_id=entity_id,
+            )
+            if success:
+                await state.set_state(SearchStates.waiting_for_gs_action_entity)
+                await callback.answer()
+        else:
+            await handle_back_to_list(callback, state)
+
+    elif data.startswith("gs_add_select:"):
+        parsed = parse_callback_data(data, 2)
+        if not parsed:
             await callback.answer("Invalid callback data")
             return
+        entity_id, status = int(parsed[0]), parsed[1]
 
-        success = await show_gs_entity(
-            callback=callback,
-            page=page,
-            state=state,
-            entity_id=entity_id,
-        )
-        if success:
-            await callback.answer()
-        return
-
-    if data.startswith("gs_add_select:"):
         try:
-            _, page, entity_id, status = data.split(":", 7)
-            page = int(page)
-            entity_id = int(entity_id)
             status = StatusType(status)
-        except (ValueError, IndexError):
-            logger.error(f"Invalid callback data: {data}")
-            await callback.answer("Invalid callback data")
+        except ValueError:
+            await callback.answer("Invalid status")
             return
 
         try:
-            entity = EntityDB.get_by_id(entity_id)
+            entity = get_entity_safe(entity_id)
+            if not entity:
+                await callback.answer("Entity not found")
+                return
 
             user_entity, created = UserEntityDB.get_or_create(
                 user=user, entity=entity, defaults={"status": status}
@@ -433,14 +453,13 @@ async def handle_gs_add_to_list_(callback: CallbackQuery, state: FSMContext):
                 user_entity.save()
 
             # Показываем сообщение об успехе
-            success_message = get_string("entity_added_to_list", lang).format(
+            success_message = f"{get_string("entity_added_to_list", lang).format(
                 entity_title=entity.title,
                 status_type=get_status_string(status.value, lang),
-            )
+            )}\n\n{get_string("start_message", lang)}"
             await callback.message.delete()
-            await callback.message.answer(success_message)
             await callback.message.answer(
-                get_string("start_message", lang),
+                success_message,
                 reply_markup=get_menu_keyboard(lang),
             )
             await state.clear()
@@ -454,4 +473,3 @@ async def handle_gs_add_to_list_(callback: CallbackQuery, state: FSMContext):
             await state.clear()
             await state.set_state(MainMenuStates.waiting_for_query)
         await callback.answer()
-        return

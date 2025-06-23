@@ -22,7 +22,7 @@ def get_ls_results_keyboard(
         builder.row(
             InlineKeyboardButton(
                 text=btn_text,
-                callback_data=f"ls_select:{page}:{user_entity.id}",
+                callback_data=f"ls_select:{user_entity.id}",
             )
         )
 
@@ -79,7 +79,7 @@ def get_ls_results_keyboard(
     return builder.as_markup()
 
 
-def get_ls_detail_keyboard(user_entity, page, lang: str = "en"):
+def get_ls_detail_keyboard(user_entity, lang: str = "en"):
     user_entity_id = user_entity.id
     entity_type = user_entity.entity.type
     rating = user_entity.user_rating
@@ -103,45 +103,41 @@ def get_ls_detail_keyboard(user_entity, page, lang: str = "en"):
     row_buttons = [
         InlineKeyboardButton(
             text=rate_button_name,
-            callback_data=f"ls_select_rate:{page}:{user_entity_id}",
+            callback_data=f"ls_select_rate:{user_entity_id}",
         ),
         InlineKeyboardButton(
             text=status_button_name,
-            callback_data=f"ls_select_status:{page}:{user_entity_id}",
+            callback_data=f"ls_select_status:{user_entity_id}",
         ),
     ]
     if entity_type == EntityType.SERIES:
         row_buttons.append(
             InlineKeyboardButton(
                 text=current_season_button_name,
-                callback_data=f"ls_select_season:{page}:{user_entity_id}",
+                callback_data=f"ls_select_season:{user_entity_id}",
             )
         )
     builder.row(*row_buttons)
     builder.row(
         InlineKeyboardButton(
             text=get_string("delete", lang),
-            callback_data=f"ls_select_delete:{page}:{user_entity_id}",
+            callback_data=f"ls_select_delete:{user_entity_id}",
         ),
-        # InlineKeyboardButton(
-        #     text=get_string("share", lang),
-        #     callback_data=f"ls_select_share:{page}:{user_entity_id}",
-        # ),
         InlineKeyboardButton(
             text=get_string("back", lang),
-            callback_data=f"ls_back:{page}",
+            callback_data="ls_back:",
         ),
     )
     return builder.as_markup()
 
 
-def get_rating_keyboard(user_entity_id, page, lang: str = "en"):
+def get_rating_keyboard(user_entity_id, lang: str = "en"):
     builder = InlineKeyboardBuilder()
     builder.row(
         *[
             InlineKeyboardButton(
                 text=str(i),
-                callback_data=f"ls_set_rating:{page}:{user_entity_id}:{i}",
+                callback_data=f"ls_set_rating:{user_entity_id}:{i}",
             )
             for i in range(1, 6)
         ]
@@ -149,32 +145,32 @@ def get_rating_keyboard(user_entity_id, page, lang: str = "en"):
     builder.row(
         InlineKeyboardButton(
             text=get_string("back", lang),
-            callback_data=f"ls_back:{page}:{user_entity_id}",
+            callback_data=f"ls_back:{user_entity_id}",
         )
     )
     return builder.as_markup()
 
 
-def get_status_keyboard(user_entity_id, page, lang: str = "en"):
+def get_status_keyboard(user_entity_id, lang: str = "en"):
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(
             text=get_status_string(StatusType.COMPLETED.value, lang),
-            callback_data=f"ls_set_status:{page}:{user_entity_id}:{StatusType.COMPLETED.value}",
+            callback_data=f"ls_set_status:{user_entity_id}:{StatusType.COMPLETED.value}",
         ),
         InlineKeyboardButton(
             text=get_status_string(StatusType.IN_PROGRESS.value, lang),
-            callback_data=f"ls_set_status:{page}:{user_entity_id}:{StatusType.IN_PROGRESS.value}",
+            callback_data=f"ls_set_status:{user_entity_id}:{StatusType.IN_PROGRESS.value}",
         ),
         InlineKeyboardButton(
             text=get_status_string(StatusType.PLANNING.value, lang),
-            callback_data=f"ls_set_status:{page}:{user_entity_id}:{StatusType.PLANNING.value}",
+            callback_data=f"ls_set_status:{user_entity_id}:{StatusType.PLANNING.value}",
         ),
     )
     builder.row(
         InlineKeyboardButton(
             text=get_string("back", lang),
-            callback_data=f"ls_back:{page}:{user_entity_id}",
+            callback_data=f"ls_back:{user_entity_id}",
         )
     )
     return builder.as_markup()
@@ -184,14 +180,13 @@ def get_season_number_keyboard(
     user_entity_id,
     season: int = 1,
     lang: str = "en",
-    page: int = 1,
 ):
     builder = InlineKeyboardBuilder()
     # Ряд 1: - | номер | +
     builder.row(
         InlineKeyboardButton(
             text="-",
-            callback_data=f"ls_set_season:{page}:{user_entity_id}:{season-1 if season > 1 else 1}",
+            callback_data=f"ls_set_season:{user_entity_id}:{season-1 if season > 1 else 1}",
         ),
         InlineKeyboardButton(
             text=str(season),
@@ -199,18 +194,18 @@ def get_season_number_keyboard(
         ),
         InlineKeyboardButton(
             text="+",
-            callback_data=f"ls_set_season:{page}:{user_entity_id}:{season+1}",
+            callback_data=f"ls_set_season:{user_entity_id}:{season+1}",
         ),
     )
     # Ряд 2: Сброс | OK
     builder.row(
         InlineKeyboardButton(
             text=get_string("clean", lang),  # Например, "Сброс"
-            callback_data=f"ls_set_season_clean:{page}:{user_entity_id}",
+            callback_data=f"ls_set_season_clean:{user_entity_id}",
         ),
         InlineKeyboardButton(
             text=get_string("confirm", lang),  # Например, "OK"
-            callback_data=f"ls_set_season_confirm:{page}:{user_entity_id}:{season}",
+            callback_data=f"ls_set_season_confirm:{user_entity_id}:{season}",
         ),
     )
     return builder.as_markup()
@@ -219,17 +214,16 @@ def get_season_number_keyboard(
 def get_delete_confirm_keyboard(
     user_entity_id,
     lang: str = "en",
-    page: int = 1,
 ):
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(
             text=get_string("yes", lang),
-            callback_data=f"ls_set_delete:{page}:{user_entity_id}:{True}",
+            callback_data=f"ls_set_delete:{user_entity_id}:{True}",
         ),
         InlineKeyboardButton(
             text=get_string("no", lang),
-            callback_data=f"ls_back:{page}:{user_entity_id}",
+            callback_data=f"ls_back:{user_entity_id}",
         ),
     )
     return builder.as_markup()

@@ -15,26 +15,6 @@ logger = logging.getLogger(__name__)
 profile_router = Router()
 
 
-@profile_router.message(lambda m: m.text and m.text in get_profile_commands())
-async def handle_profile(message: types.Message, state: FSMContext):
-    if not await ensure_user_exists(message, state):
-        state_data = await state.get_data()
-        return
-    user = UserDB.get_or_none(tg_id=message.from_user.id)
-    lang = user.language if user else "en"
-    await state.update_data(lang=lang)
-
-    await message.answer(
-        text=get_string("profile_message", lang).format(
-            user_name=user.name,
-            entities_count=user.user_entities.count(),
-        ),
-        reply_markup=get_profile_keyboard(lang),
-    )
-
-    await state.set_state(ProfileStates.waiting_for_profile_action)
-
-
 @profile_router.callback_query(ProfileStates.waiting_for_profile_action)
 async def handle_profile_actions(callback: CallbackQuery, state: FSMContext):
     state_data = await state.get_data()

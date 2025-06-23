@@ -5,12 +5,12 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from typing import List, Dict
 from bot.utils.strings import get_string
 from models.enum_classes import SourceApi, StatusType
+
 logger = logging.getLogger(__name__)
 
 
 def get_gs_kp_list_keyboard(
     results: List[Dict],
-    page: int,
     lang: str = "en",
 ) -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
@@ -23,7 +23,7 @@ def get_gs_kp_list_keyboard(
         builder.row(
             InlineKeyboardButton(
                 text=btn_text,
-                callback_data=f"gs_select:{page}:{kp_id}",
+                callback_data=f"gs_select:{kp_id}",
             )
         )
     return builder
@@ -31,7 +31,6 @@ def get_gs_kp_list_keyboard(
 
 def get_gs_omdb_list_keyboard(
     results: List[Dict],
-    page: int,
     lang: str = "en",
 ) -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
@@ -44,7 +43,7 @@ def get_gs_omdb_list_keyboard(
         builder.row(
             InlineKeyboardButton(
                 text=btn_text,
-                callback_data=f"gs_select:{page}:{imdb_id}",
+                callback_data=f"gs_select:{imdb_id}",
             )
         )
     return builder
@@ -62,13 +61,11 @@ def get_gs_results_keyboard(
     if source_api == SourceApi.KP:
         builder = get_gs_kp_list_keyboard(
             results=results,
-            page=page,
             lang=lang,
         )
     elif source_api == SourceApi.OMDB:
         builder = get_gs_omdb_list_keyboard(
             results=results,
-            page=page,
             lang=lang,
         )
 
@@ -79,7 +76,7 @@ def get_gs_results_keyboard(
         pagination_row.append(
             InlineKeyboardButton(
                 text="◀️",
-                callback_data=f"gs_page:{page-1}",
+                callback_data="gs_page_prev",
             )
         )
     pagination_row.append(
@@ -94,7 +91,7 @@ def get_gs_results_keyboard(
         pagination_row.append(
             InlineKeyboardButton(
                 text="▶️",
-                callback_data=f"gs_page:{page+1}",
+                callback_data="gs_page_next",
             )
         )
     builder.row(*pagination_row)
@@ -102,7 +99,7 @@ def get_gs_results_keyboard(
     builder.row(
         InlineKeyboardButton(
             text=get_string("change_entity_type", lang),
-            callback_data=f"gs_filter:{page}",
+            callback_data="gs_filter",
         ),
         InlineKeyboardButton(
             text=get_string("cancel", lang), callback_data="gs_cancel"
@@ -113,39 +110,42 @@ def get_gs_results_keyboard(
 
 def get_gs_entity_detail_keyboard(
     entity_id: int,
-    page: int,
     lang: str = "en",
     already_added: bool = False,
+    is_deep_link: bool = False,
 ) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
+    if is_deep_link:
+        back_btn = InlineKeyboardButton(
+            text=get_string("cancel", lang),
+            callback_data="gs_cancel",
+        )
+    else:
+        back_btn = InlineKeyboardButton(
+            text=get_string("back", lang),
+            callback_data="gs_back",
+        )
     if already_added:
         builder.row(
             InlineKeyboardButton(
                 text=get_string("already_added", lang),
                 callback_data="noop",
             ),
-            InlineKeyboardButton(
-                text=get_string("back", lang),
-                callback_data=f"gs_back:{page}",
-            ),
+            back_btn,
         )
     else:
         builder.row(
             InlineKeyboardButton(
                 text=get_string("add_to_list", lang),
-                callback_data=f"gs_add:{page}:{entity_id}",
+                callback_data=f"gs_add:{entity_id}",
             ),
-            InlineKeyboardButton(
-                text=get_string("back", lang),
-                callback_data=f"gs_back:{page}",
-            ),
+            back_btn,
         )
     return builder.as_markup()
 
 
 def get_gs_add_to_list_keyboard(
     entity_id: int,
-    page: int,
     lang: str = "en",
 ) -> InlineKeyboardMarkup:
     """Создает клавиатуру для выбора статуса добавления в список"""
@@ -155,11 +155,11 @@ def get_gs_add_to_list_keyboard(
     builder.row(
         InlineKeyboardButton(
             text=get_string("in_progress", lang),
-            callback_data=f"gs_add_select:{page}:{entity_id}:{StatusType.IN_PROGRESS.value}",
+            callback_data=f"gs_add_select:{entity_id}:{StatusType.IN_PROGRESS.value}",
         ),
         InlineKeyboardButton(
             text=get_string("completed", lang),
-            callback_data=f"gs_add_select:{page}:{entity_id}:{StatusType.COMPLETED.value}",
+            callback_data=f"gs_add_select:{entity_id}:{StatusType.COMPLETED.value}",
         ),
     )
 
@@ -167,11 +167,11 @@ def get_gs_add_to_list_keyboard(
     builder.row(
         InlineKeyboardButton(
             text=get_string("planning", lang),
-            callback_data=f"gs_add_select:{page}:{entity_id}:{StatusType.PLANNING.value}",
+            callback_data=f"gs_add_select:{entity_id}:{StatusType.PLANNING.value}",
         ),
         InlineKeyboardButton(
             text=get_string("back", lang),
-            callback_data=f"gs_back:{page}:{entity_id}",
+            callback_data="gs_back",
         ),
     )
 
