@@ -121,7 +121,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
 async def handle_language_selection(callback: types.CallbackQuery, state: FSMContext):
     # Получение языка
     lang = callback.data.split(":")[1]
-    # user, created = get_or_create_user(callback.from_user, lang)
+    user, created = get_or_create_user(callback.from_user, lang)
     await state.update_data(lang=lang)
 
     # Проверка deep link

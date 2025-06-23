@@ -132,10 +132,6 @@ def get_gs_entity_detail_keyboard(
                 callback_data="noop",
             ),
             back_btn,
-            # InlineKeyboardButton(
-            #     text=get_string("back", lang),
-            #     callback_data="gs_back",
-            # ),
         )
     else:
         builder.row(
@@ -144,10 +140,6 @@ def get_gs_entity_detail_keyboard(
                 callback_data=f"gs_add:{entity_id}",
             ),
             back_btn,
-            # InlineKeyboardButton(
-            #     text=get_string("back", lang),
-            #     callback_data="gs_back",
-            # ),
         )
     return builder.as_markup()
 

@@ -394,7 +394,9 @@ async def handle_gs_action_entity(callback: CallbackQuery, state: FSMContext):
         )
         keyboard = get_gs_add_to_list_keyboard(entity_id=entity_id, lang=lang)
 
-        await safe_edit_or_send_message(callback.message, title_text, keyboard)
+        await safe_edit_or_send_message(
+            callback.message, title_text, keyboard, parse_mode="HTML"
+        )
 
         # Переходим в состояние ожидания выбора статуса
         await state.set_state(SearchStates.waiting_for_gs_add_to_list)
@@ -402,7 +404,7 @@ async def handle_gs_action_entity(callback: CallbackQuery, state: FSMContext):
 
 
 @gs_router.callback_query(SearchStates.waiting_for_gs_add_to_list)
-async def handle_gs_add_to_list_(callback: CallbackQuery, state: FSMContext):
+async def handle_gs_add_to_list(callback: CallbackQuery, state: FSMContext):
     state_data = await state.get_data()
     lang = state_data.get("lang")
     data = callback.data
@@ -451,14 +453,13 @@ async def handle_gs_add_to_list_(callback: CallbackQuery, state: FSMContext):
                 user_entity.save()
 
             # Показываем сообщение об успехе
-            success_message = get_string("entity_added_to_list", lang).format(
+            success_message = f"{get_string("entity_added_to_list", lang).format(
                 entity_title=entity.title,
                 status_type=get_status_string(status.value, lang),
-            )
+            )}\n\n{get_string("start_message", lang)}"
             await callback.message.delete()
-            await callback.message.answer(success_message)
             await callback.message.answer(
-                get_string("start_message", lang),
+                success_message,
                 reply_markup=get_menu_keyboard(lang),
             )
             await state.clear()

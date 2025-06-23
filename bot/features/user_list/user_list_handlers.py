@@ -355,7 +355,9 @@ async def handle_ls_action_entity(callback: CallbackQuery, state: FSMContext):
         return
 
     if title_text and keyboard:
-        await safe_edit_or_send_message(callback.message, title_text, keyboard)
+        await safe_edit_or_send_message(
+            callback.message, title_text, keyboard, parse_mode="HTML"
+        )
     await callback.answer()
 
 

@@ -123,10 +123,6 @@ def get_ls_detail_keyboard(user_entity, lang: str = "en"):
             text=get_string("delete", lang),
             callback_data=f"ls_select_delete:{user_entity_id}",
         ),
-        # InlineKeyboardButton(
-        #     text=get_string("share", lang),
-        #     callback_data=f"ls_select_share:{user_entity_id}",
-        # ),
         InlineKeyboardButton(
             text=get_string("back", lang),
             callback_data="ls_back:",
