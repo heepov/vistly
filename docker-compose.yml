@@ -5,7 +5,7 @@ services:
     container_name: postgres_db
     restart: unless-stopped
     env_file:
-      - common-postgres.env
+      - ../common-postgres.env
     environment:
       POSTGRES_DB: ${DB_NAME}
     volumes:
